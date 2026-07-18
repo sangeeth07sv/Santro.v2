@@ -9,6 +9,7 @@ export interface ProductFilters {
   search?: string;
   minPrice?: number;
   maxPrice?: number;
+  owner?: string;
   sort?: "newest" | "price_asc" | "price_desc" | "rating";
   page?: number;
   pageSize?: number;
@@ -17,7 +18,7 @@ export interface ProductFilters {
 /** Public product listing with search, filters, and pagination (used by Server Components). */
 export async function getProducts(filters: ProductFilters = {}) {
   const supabase = await createClient();
-  const { category, search, minPrice, maxPrice, sort = "newest", page = 1, pageSize = 12 } = filters;
+  const { category, search, minPrice, maxPrice, owner, sort = "newest", page = 1, pageSize = 12 } = filters;
 
   let query = supabase
     .from("products")
@@ -25,6 +26,7 @@ export async function getProducts(filters: ProductFilters = {}) {
     .eq("is_active", true);
 
   if (category) query = query.eq("category.slug", category);
+  if (owner) query = query.eq("owner_id", owner);
   if (search) query = query.textSearch("search_vector", search, { type: "websearch" });
   if (minPrice !== undefined) query = query.gte("price", minPrice);
   if (maxPrice !== undefined) query = query.lte("price", maxPrice);
@@ -79,6 +81,16 @@ export async function getProductReviews(productId: string) {
   return data ?? [];
 }
 
+/** Fire-and-forget view counter for the Trending rail. Never throws to the caller. */
+export async function incrementProductView(productId: string) {
+  try {
+    const supabase = await createClient();
+    await supabase.rpc("increment_product_view", { p_product_id: productId });
+  } catch {
+    // trending is a nice-to-have; a failed increment shouldn't break the product page
+  }
+}
+
 // ---------------- SHOP OWNER ----------------
 
 /** Products belonging to the current shop owner (RLS also enforces this). */
@@ -102,6 +114,8 @@ export async function createShopProduct(formData: FormData) {
     ...raw,
     is_active: raw.is_active === "true",
     is_featured: false,
+    is_flash_sale: raw.is_flash_sale === "true",
+    flash_sale_ends_at: raw.flash_sale_ends_at || null,
     category_id: raw.category_id || null,
   });
   if (!parsed.success) return { error: parsed.error.issues[0]?.message };
@@ -113,9 +127,16 @@ export async function createShopProduct(formData: FormData) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: "Please sign in as a shop owner" };
 
+  const { flash_sale_ends_at, ...rest } = parsed.data;
   const { data, error } = await supabase
     .from("products")
-    .insert({ ...parsed.data, owner_id: user.id })
+    .insert({
+      ...rest,
+      // flash sale only makes sense with a real end time; drop the flag if none was given
+      is_flash_sale: rest.is_flash_sale && !!flash_sale_ends_at,
+      flash_sale_ends_at: flash_sale_ends_at ? new Date(flash_sale_ends_at).toISOString() : null,
+      owner_id: user.id,
+    })
     .select()
     .single();
   if (error) return { error: error.message };
@@ -144,6 +165,8 @@ export async function createProduct(formData: FormData) {
     ...raw,
     is_active: raw.is_active === "true",
     is_featured: raw.is_featured === "true",
+    is_flash_sale: raw.is_flash_sale === "true",
+    flash_sale_ends_at: raw.flash_sale_ends_at || null,
     category_id: raw.category_id || null,
   });
   if (!parsed.success) return { error: parsed.error.issues[0]?.message };
@@ -152,7 +175,16 @@ export async function createProduct(formData: FormData) {
   const imageUrl = typeof raw.image_url === "string" ? raw.image_url.trim() : "";
 
   const supabase = await createClient();
-  const { data, error } = await supabase.from("products").insert(parsed.data).select().single();
+  const { flash_sale_ends_at, ...rest } = parsed.data;
+  const { data, error } = await supabase
+    .from("products")
+    .insert({
+      ...rest,
+      is_flash_sale: rest.is_flash_sale && !!flash_sale_ends_at,
+      flash_sale_ends_at: flash_sale_ends_at ? new Date(flash_sale_ends_at).toISOString() : null,
+    })
+    .select()
+    .single();
   if (error) return { error: error.message };
 
   // seed a default inventory row
@@ -191,12 +223,20 @@ export async function updateProduct(id: string, formData: FormData) {
     ...raw,
     is_active: raw.is_active === "true",
     is_featured: raw.is_featured === "true",
+    is_flash_sale: raw.is_flash_sale === "true",
+    flash_sale_ends_at: raw.flash_sale_ends_at || null,
     category_id: raw.category_id || null,
   });
   if (!parsed.success) return { error: parsed.error.issues[0]?.message };
 
   const supabase = await createClient();
-  const { error } = await supabase.from("products").update(parsed.data).eq("id", id);
+  const { flash_sale_ends_at, ...rest } = parsed.data;
+  const updatePayload: Record<string, unknown> = { ...rest };
+  if (raw.flash_sale_ends_at !== undefined) {
+    updatePayload.flash_sale_ends_at = flash_sale_ends_at ? new Date(flash_sale_ends_at).toISOString() : null;
+    updatePayload.is_flash_sale = !!rest.is_flash_sale && !!flash_sale_ends_at;
+  }
+  const { error } = await supabase.from("products").update(updatePayload).eq("id", id);
   if (error) return { error: error.message };
 
   if (raw.quantity !== undefined && raw.quantity !== "") {
@@ -250,4 +290,5 @@ export async function updateInventory(productId: string, variantKey: string, qua
   revalidatePath("/admin/products");
   return { success: true };
     }
-    
+
+         
