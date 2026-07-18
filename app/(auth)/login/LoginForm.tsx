@@ -113,7 +113,8 @@ export function LoginForm({ expectedRole, title = "Welcome back", subtitle = "Si
       </p>
 
       <div className="mt-4 flex flex-col items-center gap-1 text-xs text-slate-400">
-        {expectedRole !== "customer" && <Link href="/login" className="hover:underline">Customer sign in</Link>}
+        {expectedRole !== "customer" && <Link href="/login/customer" className="hover:underline">Customer sign in</Link>}
+        <Link href="/login" className="hover:underline">Switch role</Link>
         {expectedRole !== "shop_owner" && <Link href="/login/shop" className="hover:underline">Shop owner sign in</Link>}
         {expectedRole !== "delivery_partner" && <Link href="/login/delivery" className="hover:underline">Delivery partner sign in</Link>}
       </div>
