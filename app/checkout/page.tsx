@@ -21,7 +21,7 @@ export default async function CheckoutPage() {
   return (
     <div className="mx-auto max-w-4xl px-4 py-8">
       <h1 className="mb-6 text-2xl font-semibold text-slate-900 dark:text-white">Checkout</h1>
-      <CheckoutForm addresses={addresses ?? []} subtotal={subtotal} itemCount={items.length} />
+      <CheckoutForm addresses={addresses ?? []} subtotal={subtotal} itemCount={items.length} items={items} />
     </div>
   );
 }
