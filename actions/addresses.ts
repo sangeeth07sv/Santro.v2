@@ -30,6 +30,8 @@ export async function createAddress(formData: FormData) {
   const state = String(formData.get("state") ?? "").trim();
   const postal_code = String(formData.get("postal_code") ?? "").trim();
   const is_default = formData.get("is_default") === "on";
+  const latitude = formData.get("latitude") ? Number(formData.get("latitude")) : null;
+  const longitude = formData.get("longitude") ? Number(formData.get("longitude")) : null;
 
   if (!full_name || !phone || !line1 || !city || !state || !postal_code) {
     return { error: "Please fill in all required fields" };
@@ -51,6 +53,8 @@ export async function createAddress(formData: FormData) {
     postal_code,
     country: "IN",
     is_default,
+    latitude,
+    longitude,
   });
 
   if (error) return { error: error.message };
