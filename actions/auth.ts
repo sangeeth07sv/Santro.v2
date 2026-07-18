@@ -6,7 +6,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { cache } from "react";
 
-type ActionResult = { error?: string; success?: boolean };
+type ActionResult = { error?: string; success?: boolean; role?: string };
 
 export async function login(formData: FormData): Promise<ActionResult> {
   const parsed = loginSchema.safeParse({
@@ -18,12 +18,18 @@ export async function login(formData: FormData): Promise<ActionResult> {
   }
 
   const supabase = await createClient();
-  const { error } = await supabase.auth.signInWithPassword(parsed.data);
+  const { data, error } = await supabase.auth.signInWithPassword(parsed.data);
 
   if (error) return { error: error.message };
 
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", data.user.id)
+    .single();
+
   revalidatePath("/", "layout");
-  return { success: true };
+  return { success: true, role: profile?.role };
 }
 
 export async function register(formData: FormData): Promise<ActionResult> {
