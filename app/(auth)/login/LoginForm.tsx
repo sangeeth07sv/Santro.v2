@@ -8,6 +8,12 @@ import { toast } from "sonner";
 import { login, signInWithGoogle } from "@/actions/auth";
 import { Button } from "@/components/ui/Button";
 
+const ROLE_HOME: Record<string, string> = {
+  customer: "/products",
+  shop_owner: "/dashboard/shop",
+  delivery_partner: "/dashboard/delivery",
+};
+
 export function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -16,12 +22,18 @@ export function LoginForm() {
   function handleSubmit(formData: FormData) {
     startTransition(async () => {
       const res = await login(formData);
-      if (res?.error) toast.error(res.error);
-      else {
-        toast.success("Welcome back!");
-        router.push(searchParams.get("redirect") ?? "/");
-        router.refresh();
+      if (res?.error) {
+        toast.error(res.error);
+        return;
       }
+
+      toast.success("Welcome back!");
+
+      const explicitRedirect = searchParams.get("redirect");
+      const destination = explicitRedirect ?? (res.role ? ROLE_HOME[res.role] ?? "/" : "/");
+
+      router.push(destination);
+      router.refresh();
     });
   }
 
