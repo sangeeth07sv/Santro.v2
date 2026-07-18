@@ -79,6 +79,17 @@ export function NewProductForm({ categories }: { categories: { id: string; name:
         <p className="mt-1 text-xs text-slate-400">Paste a hosted image link (e.g. from Cloudinary or Imgur).</p>
       </div>
 
+      <div className="rounded-lg border border-dashed border-slate-200 p-3 dark:border-slate-700">
+        <label className="flex items-center gap-2 text-sm font-medium text-slate-700 dark:text-slate-200">
+          <input type="checkbox" name="is_flash_sale" value="true" />
+          Put this on Flash Sale
+        </label>
+        <div className="mt-2">
+          <label className="mb-1 block text-xs text-slate-500">Sale ends at</label>
+          <input name="flash_sale_ends_at" type="datetime-local" className={inputClass} />
+        </div>
+      </div>
+
       <Button type="submit" isLoading={isPending} className="w-full">
         Upload Product
       </Button>
