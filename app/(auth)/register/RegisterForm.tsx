@@ -25,7 +25,9 @@ export function RegisterForm() {
       if (res?.error) toast.error(res.error);
       else {
         toast.success("Account created! Check your email to confirm.");
-        router.push("/login");
+        const loginPath =
+          role === "shop_owner" ? "/login/shop" : role === "delivery_partner" ? "/login/delivery" : "/login/customer";
+        router.push(loginPath);
       }
     });
   }
