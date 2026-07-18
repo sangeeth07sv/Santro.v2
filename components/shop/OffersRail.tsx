@@ -5,7 +5,7 @@ export function OffersRail({ offers }: { offers: Coupon[] }) {
   if (!offers.length) return null;
 
   return (
-    <section className="mt-8">
+    <section>
       <h2 className="mb-3 text-lg font-semibold text-slate-900 dark:text-white">Offers</h2>
       <div className="scrollbar-hide -mx-4 flex gap-3 overflow-x-auto px-4 pb-1">
         {offers.map((offer) => (
