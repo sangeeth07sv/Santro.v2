@@ -82,7 +82,9 @@ export async function getCart() {
 
   const { data: items } = await supabase
     .from("cart_items")
-    .select("*, product:products(id, name, slug, price, product_images(url, is_primary))")
+    .select(
+      "*, product:products(id, name, slug, price, owner_id, product_images(url, is_primary), owner:profiles(shop_name, latitude, longitude))"
+    )
     .eq("cart_id", cart.id)
     .order("created_at", { ascending: true });
 
@@ -130,4 +132,5 @@ export async function toggleWishlist(productId: string) {
   revalidatePath("/dashboard/wishlist");
   return { success: true, wishlisted: true };
     }
-    
+
+                                                                              
