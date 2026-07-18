@@ -48,16 +48,16 @@ export function FlashSaleSection({ products }: { products: (Product & { flash_sa
   if (!products.length) return null;
 
   return (
-    <section className="mt-8">
-      <div className="flex items-center justify-between rounded-t-2xl bg-gradient-to-r from-red-600 to-orange-500 px-4 py-3">
+    <section>
+      <div className="flex items-center justify-between rounded-t-lg bg-gradient-to-r from-red-600 to-orange-500 px-4 py-3">
         <div className="flex items-center gap-2 text-white">
           <Zap className="h-5 w-5 fill-white" />
           <h2 className="text-lg font-bold">Flash Sale</h2>
         </div>
         <CountdownBadge endsAt={soonestEndsAt} />
       </div>
-      <div className="rounded-b-2xl border border-t-0 border-red-100 p-4 dark:border-slate-700">
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
+      <div className="rounded-b-lg border border-t-0 border-red-100 bg-white p-4 shadow-card dark:border-slate-700 dark:bg-indigo-800">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
           {products.map((product) => (
             <ProductCard key={product.id} product={product} />
           ))}
