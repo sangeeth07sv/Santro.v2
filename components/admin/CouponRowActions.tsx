@@ -1,0 +1,36 @@
+"use client";
+
+import { useTransition } from "react";
+import { toast } from "sonner";
+import { toggleCouponActive, deleteCoupon } from "@/actions/coupons";
+
+export function CouponRowActions({ id, isActive }: { id: string; isActive: boolean }) {
+  const [isPending, startTransition] = useTransition();
+
+  function handleToggle() {
+    startTransition(async () => {
+      const res = await toggleCouponActive(id, !isActive);
+      if (res?.error) toast.error(res.error);
+    });
+  }
+
+  function handleDelete() {
+    if (!confirm("Delete this coupon? This cannot be undone.")) return;
+    startTransition(async () => {
+      const res = await deleteCoupon(id);
+      if (res?.error) toast.error(res.error);
+      else toast.success("Coupon deleted");
+    });
+  }
+
+  return (
+    <div className="flex justify-end gap-3 text-xs">
+      <button onClick={handleToggle} disabled={isPending} className="text-indigo-600 hover:underline disabled:opacity-50">
+        {isActive ? "Deactivate" : "Activate"}
+      </button>
+      <button onClick={handleDelete} disabled={isPending} className="text-red-500 hover:underline disabled:opacity-50">
+        Delete
+      </button>
+    </div>
+  );
+}
