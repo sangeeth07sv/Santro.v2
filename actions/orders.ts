@@ -4,8 +4,8 @@ import { createClient } from "@/lib/supabase/server";
 import { checkoutSchema } from "@/utils/validation";
 import { revalidatePath } from "next/cache";
 import { getCart } from "./cart";
+import { estimateDelivery, haversineKm, DEFAULT_SHIPPING_FEE } from "@/utils/geo";
 
-const SHIPPING_FLAT_FEE = 49; // ₹49 flat shipping, override with real logic as needed
 const TAX_RATE = 0.0; // set to e.g. 0.18 for 18% GST if prices are tax-exclusive
 
 /**
@@ -61,8 +61,28 @@ export async function createOrder(formData: FormData) {
     couponId = coupon.id;
   }
 
+  // Distance-based shipping fee — mirrors the estimate shown on the checkout
+  // page. Falls back to a flat fee if we don't have coordinates for the
+  // address or any shop in the cart.
+  let shippingFee = DEFAULT_SHIPPING_FEE;
+  if (address.latitude != null && address.longitude != null) {
+    const ownerIds = Array.from(new Set(items.map((i: any) => i.product?.owner_id).filter(Boolean)));
+    if (ownerIds.length > 0) {
+      const { data: owners } = await supabase
+        .from("profiles")
+        .select("id, latitude, longitude")
+        .in("id", ownerIds);
+      const distances = (owners ?? [])
+        .filter((o: any) => o.latitude != null && o.longitude != null)
+        .map((o: any) => haversineKm({ lat: address.latitude, lng: address.longitude }, { lat: o.latitude, lng: o.longitude }));
+      if (distances.length > 0) {
+        shippingFee = estimateDelivery(Math.max(...distances)).fee;
+      }
+    }
+  }
+
   const tax = Math.round((subtotal - discount) * TAX_RATE * 100) / 100;
-  const total = Math.max(subtotal - discount + SHIPPING_FLAT_FEE + tax, 0);
+  const total = Math.max(subtotal - discount + shippingFee + tax, 0);
 
   // 1. Create the order
   const { data: order, error: orderError } = await supabase
@@ -71,7 +91,7 @@ export async function createOrder(formData: FormData) {
       user_id: user.id,
       subtotal,
       discount,
-      shipping_fee: SHIPPING_FLAT_FEE,
+      shipping_fee: shippingFee,
       tax,
       total,
       coupon_id: couponId,
