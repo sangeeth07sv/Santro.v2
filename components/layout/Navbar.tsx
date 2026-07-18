@@ -2,10 +2,9 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Heart, LogOut, Menu, Search, ShoppingCart, User, X } from "lucide-react";
+import { Heart, Menu, Search, ShoppingCart, User, X } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/utils/cn";
-import { logout } from "@/actions/auth";
 
 export function Navbar({
   isLoggedIn,
@@ -95,18 +94,6 @@ export function Navbar({
           <Link href={isLoggedIn ? "/dashboard" : "/login"}>
             <User className="h-5 w-5 text-indigo-100" />
           </Link>
-          {isLoggedIn && (
-            <form action={logout}>
-              <button
-                type="submit"
-                aria-label="Log out"
-                title="Log out"
-                className="text-indigo-100 hover:text-marigold-300"
-              >
-                <LogOut className="h-5 w-5" />
-              </button>
-            </form>
-          )}
         </div>
       </div>
 
@@ -132,13 +119,6 @@ export function Navbar({
             )}
             {(role === "delivery_partner" || isAdmin) && (
               <Link href="/dashboard/delivery" onClick={() => setMenuOpen(false)}>Deliveries</Link>
-            )}
-            {isLoggedIn && (
-              <form action={logout}>
-                <button type="submit" className="text-left text-indigo-100">
-                  Log out
-                </button>
-              </form>
             )}
           </nav>
         </div>
