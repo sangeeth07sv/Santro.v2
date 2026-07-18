@@ -6,6 +6,15 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
+        // Brand — primary interactive color for links, focus rings, CTAs (aliases indigo)
+        brand: {
+          50: "#f1effa",
+          100: "#e1ddf2",
+          400: "#5d4d99",
+          500: "#493a80",
+          600: "#382a63",
+          700: "#2c2050",
+        },
         // Night-bazaar indigo — nav, footer, dark surfaces, headings
         indigo: {
           50: "#f1effa",
