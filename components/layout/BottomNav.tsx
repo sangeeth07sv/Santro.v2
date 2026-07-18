@@ -50,9 +50,10 @@ export function BottomNav({
 }) {
   const pathname = usePathname();
 
-  // Rule: no bottom nav on the landing page, and none for signed-out visitors
-  // (there's no role to key the nav off yet — they see the top nav + a sign-in prompt instead).
-  if (pathname === "/" || !isLoggedIn) return null;
+  // Rule: bottom nav is hidden for signed-out visitors (there's no role to key
+  // the nav off yet — they see the top nav + a sign-in prompt instead). It now
+  // shows on the home page too for logged-in users, per product decision.
+  if (!isLoggedIn) return null;
 
   const items = itemsForRole(role as Role);
   // Pick the single best (longest-prefix) match so nested routes like
