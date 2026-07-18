@@ -1,10 +1,12 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { Bike, MapPin } from "lucide-react";
 import { createOrder } from "@/actions/orders";
 import { Button } from "@/components/ui/Button";
+import { estimateDelivery, haversineKm, DEFAULT_SHIPPING_FEE } from "@/utils/geo";
 import type { Address } from "@/types/database";
 
 const PAYMENT_METHODS = [
@@ -14,18 +16,45 @@ const PAYMENT_METHODS = [
   { value: "stripe", label: "Card (Stripe)" },
 ];
 
+interface CartItem {
+  product?: {
+    owner?: { shop_name?: string | null; latitude?: number | null; longitude?: number | null } | null;
+  } | null;
+}
+
 export function CheckoutForm({
   addresses,
   subtotal,
   itemCount,
+  items,
 }: {
   addresses: Address[];
   subtotal: number;
   itemCount: number;
+  items: CartItem[];
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [selectedAddress, setSelectedAddress] = useState(addresses[0]?.id ?? "");
+
+  const currentAddress = addresses.find((a) => a.id === selectedAddress);
+
+  // Distance to the farthest shop in the cart — that's the leg that determines
+  // when the whole order can be delivered.
+  const estimate = useMemo(() => {
+    const addrLat = (currentAddress as any)?.latitude;
+    const addrLng = (currentAddress as any)?.longitude;
+    if (addrLat == null || addrLng == null) return null;
+
+    const shopDistances = items
+      .map((i) => i.product?.owner)
+      .filter((o): o is { shop_name?: string | null; latitude: number; longitude: number } => o?.latitude != null && o?.longitude != null)
+      .map((o) => haversineKm({ lat: addrLat, lng: addrLng }, { lat: o.latitude, lng: o.longitude }));
+
+    if (shopDistances.length === 0) return null;
+    const farthestKm = Math.max(...shopDistances);
+    return estimateDelivery(farthestKm);
+  }, [currentAddress, items]);
 
   function handleSubmit(formData: FormData) {
     startTransition(async () => {
@@ -35,9 +64,6 @@ export function CheckoutForm({
         return;
       }
       if (res.requiresPayment) {
-        // In production: redirect to Stripe Checkout Session or open Razorpay
-        // modal here using res.orderId, then update the `payments` row via a
-        // webhook route handler (see app/api/webhooks/*).
         toast.info("Redirecting to payment gateway...");
       } else {
         toast.success("Order placed successfully!");
@@ -80,6 +106,40 @@ export function CheckoutForm({
           </div>
         </div>
 
+        {/* Rapido-style delivery estimate card */}
+        <div className="card overflow-hidden p-0">
+          <div className="flex items-center justify-between border-b border-slate-100 p-4 dark:border-slate-700">
+            <h2 className="font-semibold text-slate-800 dark:text-white">Delivery Estimate</h2>
+            {estimate && (
+              <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
+                Fastest
+              </span>
+            )}
+          </div>
+
+          {!estimate ? (
+            <div className="flex items-center gap-3 p-4 text-sm text-slate-400">
+              <MapPin className="h-5 w-5 shrink-0" />
+              Pin an exact location on your address to see delivery time &amp; fee.
+            </div>
+          ) : (
+            <div className="flex items-center gap-4 p-4">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-indigo-50 dark:bg-slate-800">
+                <Bike className="h-5 w-5 text-indigo-600 dark:text-indigo-300" />
+              </div>
+              <div className="flex-1">
+                <p className="text-sm font-medium text-slate-800 dark:text-white">Local Delivery</p>
+                <p className="text-xs text-slate-500">
+                  {estimate.distanceKm} km away · Drop in ~{estimate.etaMinutes} min
+                </p>
+              </div>
+              <span className="text-sm font-semibold text-slate-900 dark:text-white">
+                {estimate.fee === 0 ? "Free" : `₹${estimate.fee}`}
+              </span>
+            </div>
+          )}
+        </div>
+
         <div className="card p-5">
           <h2 className="mb-3 font-semibold text-slate-800 dark:text-white">Payment Method</h2>
           <div className="space-y-2">
@@ -104,14 +164,19 @@ export function CheckoutForm({
 
       <div className="card h-fit p-5">
         <h2 className="mb-4 font-semibold text-slate-800 dark:text-white">Order Summary</h2>
-        <div className="flex justify-between text-sm text-slate-600 dark:text-slate-300">
-          <span>{itemCount} item(s)</span>
-          <span>₹{subtotal.toLocaleString("en-IN")}</span>
+        <div className="space-y-1.5 text-sm text-slate-600 dark:text-slate-300">
+          <div className="flex justify-between">
+            <span>{itemCount} item(s)</span>
+            <span>₹{subtotal.toLocaleString("en-IN")}</span>
+          </div>
+          <div className="flex justify-between">
+            <span>Delivery</span>
+            <span>{estimate ? (estimate.fee === 0 ? "Free" : `₹${estimate.fee}`) : `~₹${DEFAULT_SHIPPING_FEE}`}</span>
+          </div>
         </div>
-        <p className="mt-1 text-xs text-slate-400">Final total (with shipping & discounts) confirmed on order.</p>
+        <p className="mt-2 text-xs text-slate-400">Final total (with tax & discounts) confirmed on order.</p>
         <Button type="submit" isLoading={isPending} className="mt-5 w-full">Place Order</Button>
       </div>
     </form>
   );
-    }
-          
+}
