@@ -98,6 +98,8 @@ export interface Address {
   postal_code: string;
   country: string;
   is_default: boolean;
+  latitude?: number | null;
+  longitude?: number | null;
 }
 
 export interface Order {
