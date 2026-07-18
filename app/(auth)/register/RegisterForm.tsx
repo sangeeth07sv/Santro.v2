@@ -46,7 +46,12 @@ export function RegisterForm() {
             {ROLES.map((r) => (
               <label
                 key={r.value}
-                className="flex cursor-pointer flex-col items-center rounded-lg border border-slate-200 p-3 text-center has-[:checked]:border-brand-500 has-[:checked]:bg-brand-50 dark:border-slate-700"
+                onClick={() => setRole(r.value)}
+                className={`flex cursor-pointer flex-col items-center rounded-lg border p-3 text-center transition-colors dark:border-slate-700 ${
+                  role === r.value
+                    ? "border-brand-500 bg-brand-50"
+                    : "border-slate-200"
+                }`}
               >
                 <input
                   type="radio"
