@@ -14,6 +14,7 @@ interface PageProps {
     search?: string;
     minPrice?: string;
     maxPrice?: string;
+    owner?: string;
     sort?: string;
     page?: string;
   }>;
@@ -45,6 +46,7 @@ async function ProductResults({ params }: { params: PageProps["searchParams"] ex
     search: params.search,
     minPrice: params.minPrice ? Number(params.minPrice) : undefined,
     maxPrice: params.maxPrice ? Number(params.maxPrice) : undefined,
+    owner: params.owner,
     sort: (params.sort as any) || "newest",
     page,
   });
@@ -67,4 +69,4 @@ async function ProductResults({ params }: { params: PageProps["searchParams"] ex
       <Pagination currentPage={page} totalPages={Math.ceil(total / pageSize)} />
     </div>
   );
-    }
+}
