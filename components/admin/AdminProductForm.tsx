@@ -96,7 +96,7 @@ export function AdminProductForm({ categories, product }: AdminProductFormProps)
         <input name="image_url" type="url" defaultValue={primaryImage ?? ""} className={inputClass} placeholder="https://..." />
       </div>
 
-      <div className="flex gap-6">
+      <div className="flex flex-wrap gap-6">
         <label className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-200">
           <input type="checkbox" name="is_active" value="true" defaultChecked={product?.is_active ?? true} />
           Active
@@ -105,6 +105,22 @@ export function AdminProductForm({ categories, product }: AdminProductFormProps)
           <input type="checkbox" name="is_featured" value="true" defaultChecked={product?.is_featured ?? false} />
           Featured
         </label>
+        <label className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-200">
+          <input type="checkbox" name="is_flash_sale" value="true" defaultChecked={product?.is_flash_sale ?? false} />
+          Flash Sale
+        </label>
+      </div>
+
+      <div>
+        <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">
+          Flash Sale Ends At <span className="font-normal text-slate-400">(required for the Flash Sale badge to show)</span>
+        </label>
+        <input
+          name="flash_sale_ends_at"
+          type="datetime-local"
+          defaultValue={product?.flash_sale_ends_at ? product.flash_sale_ends_at.slice(0, 16) : ""}
+          className={inputClass}
+        />
       </div>
 
       <Button type="submit" isLoading={isPending} className="w-full">
@@ -112,4 +128,5 @@ export function AdminProductForm({ categories, product }: AdminProductFormProps)
       </Button>
     </form>
   );
-}
+      }
+      
