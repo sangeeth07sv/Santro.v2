@@ -50,6 +50,9 @@ export interface Product {
   attributes: Record<string, string[]>;
   is_active: boolean;
   is_featured: boolean;
+  is_flash_sale: boolean;
+  flash_sale_ends_at: string | null;
+  view_count: number;
   rating_avg: number;
   rating_count: number;
   owner_id: string | null; // profile id of the shop owner who uploaded it; null = admin-owned
