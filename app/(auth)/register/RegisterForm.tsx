@@ -42,28 +42,22 @@ export function RegisterForm() {
         </div>
         <div>
           <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-200">I am a...</label>
+          <input type="hidden" name="role" value={role} />
           <div className="grid grid-cols-3 gap-2">
             {ROLES.map((r) => (
-              <label
+              <button
                 key={r.value}
+                type="button"
                 onClick={() => setRole(r.value)}
-                className={`flex cursor-pointer flex-col items-center rounded-lg border p-3 text-center transition-colors dark:border-slate-700 ${
+                className={`flex flex-col items-center rounded-lg border p-3 text-center transition-colors dark:border-slate-700 ${
                   role === r.value
                     ? "border-brand-500 bg-brand-50"
                     : "border-slate-200"
                 }`}
               >
-                <input
-                  type="radio"
-                  name="role"
-                  value={r.value}
-                  checked={role === r.value}
-                  onChange={() => setRole(r.value)}
-                  className="sr-only"
-                />
                 <span className="text-xs font-medium">{r.label}</span>
                 <span className="mt-0.5 text-[10px] text-slate-400">{r.blurb}</span>
-              </label>
+              </button>
             ))}
           </div>
         </div>
@@ -87,4 +81,4 @@ export function RegisterForm() {
       </p>
     </div>
   );
-                  }
+}
