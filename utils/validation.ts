@@ -48,6 +48,8 @@ export const productSchema = z.object({
   brand: z.string().optional(),
   is_active: z.boolean().default(true),
   is_featured: z.boolean().default(false),
+  is_flash_sale: z.boolean().default(false),
+  flash_sale_ends_at: z.string().optional().nullable(), // raw datetime-local value; normalized to ISO before insert
 });
 export type ProductInput = z.infer<typeof productSchema>;
 
@@ -89,4 +91,5 @@ export const checkoutSchema = z.object({
   payment_method: z.enum(["razorpay", "stripe", "upi", "cod"]),
   coupon_code: z.string().optional(),
 });
-  
+
+    
