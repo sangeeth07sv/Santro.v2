@@ -4,10 +4,10 @@ import { createClient } from "@/lib/supabase/server";
 import {
   getNearbyShops,
   getFlashSaleProducts,
-  getTrendingProducts,
   getFastDeliveryProducts,
   getActiveOffers,
 } from "@/actions/home";
+import { getProducts } from "@/actions/products";
 import { ProductCard } from "@/components/shop/ProductCard";
 import { HomeLocationGate } from "@/components/shop/HomeLocationGate";
 import { NearbyShopsRail } from "@/components/shop/NearbyShopsRail";
@@ -90,11 +90,11 @@ export default async function HomePage({ searchParams }: PageProps) {
     .order("sort_order", { ascending: true })
     .limit(10);
 
-  const [{ data: categories }, flashSaleProducts, trendingProducts, offers, nearbyShops, fastDeliveryProducts] =
+  const [{ data: categories }, flashSaleProducts, { products: allProducts }, offers, nearbyShops, fastDeliveryProducts] =
     await Promise.all([
       categoriesPromise,
       getFlashSaleProducts(),
-      getTrendingProducts(hasLocation ? { lat, lng } : {}),
+      getProducts({ pageSize: 12 }),
       getActiveOffers(),
       hasLocation ? getNearbyShops(lat!, lng!) : Promise.resolve([]),
       hasLocation ? getFastDeliveryProducts(lat!, lng!) : Promise.resolve([]),
@@ -121,15 +121,15 @@ export default async function HomePage({ searchParams }: PageProps) {
 
       <section className="mt-8">
         <h2 className="mb-3 text-lg font-semibold text-slate-900 dark:text-white">
-          {hasLocation ? "Trending near you" : "Trending products"}
+          All Products
         </h2>
-        {trendingProducts.length === 0 ? (
+        {allProducts.length === 0 ? (
           <div className="rounded-xl border border-dashed border-slate-200 p-12 text-center text-slate-400">
             No products yet — check back soon.
           </div>
         ) : (
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
-            {trendingProducts.map((product: any) => (
+            {allProducts.map((product: any) => (
               <ProductCard key={product.id} product={product} />
             ))}
           </div>
@@ -145,4 +145,4 @@ export default async function HomePage({ searchParams }: PageProps) {
       </div>
     </div>
   );
-      }
+            }
