@@ -42,6 +42,16 @@ h1, h2, h3, h4 {
   @apply rounded-xl border border-surface-muted bg-white shadow-card dark:bg-indigo-800 dark:border-indigo-700;
 }
 
+/* Hides the scrollbar on horizontally-scrolling rails (categories, shops, offers)
+   while keeping the content scrollable via touch/drag/wheel. */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
 /* Signature element: a physical price-tag sticker, used anywhere a price appears */
 .price-tag {
   @apply relative inline-flex items-baseline gap-1 bg-marigold-500 px-2.5 py-1 font-mono
@@ -52,4 +62,4 @@ h1, h2, h3, h4 {
   content: "";
   @apply absolute left-[7px] top-1/2 h-1.5 w-1.5 -translate-y-1/2 rounded-full bg-white/70;
 }
-  
+
