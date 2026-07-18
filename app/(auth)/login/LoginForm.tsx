@@ -9,7 +9,7 @@ import { login, signInWithGoogle } from "@/actions/auth";
 import { Button } from "@/components/ui/Button";
 
 const ROLE_HOME: Record<string, string> = {
-  customer: "/products",
+  customer: "/",
   shop_owner: "/dashboard/shop",
   delivery_partner: "/dashboard/delivery",
 };
