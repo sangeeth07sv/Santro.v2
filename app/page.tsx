@@ -8,7 +8,9 @@ import {
   getActiveOffers,
 } from "@/actions/home";
 import { getProducts } from "@/actions/products";
+import { getBanners } from "@/actions/banners";
 import { ProductCard } from "@/components/shop/ProductCard";
+import { HeroBannerCarousel } from "@/components/shop/HeroBannerCarousel";
 import { HomeLocationGate } from "@/components/shop/HomeLocationGate";
 import { NearbyShopsRail } from "@/components/shop/NearbyShopsRail";
 import { CategoryRail } from "@/components/shop/CategoryRail";
@@ -90,7 +92,7 @@ export default async function HomePage({ searchParams }: PageProps) {
     .order("sort_order", { ascending: true })
     .limit(10);
 
-  const [{ data: categories }, flashSaleProducts, { products: allProducts }, offers, nearbyShops, fastDeliveryProducts] =
+  const [{ data: categories }, flashSaleProducts, { products: allProducts }, offers, nearbyShops, fastDeliveryProducts, banners] =
     await Promise.all([
       categoriesPromise,
       getFlashSaleProducts(),
@@ -98,51 +100,63 @@ export default async function HomePage({ searchParams }: PageProps) {
       getActiveOffers(),
       hasLocation ? getNearbyShops(lat!, lng!) : Promise.resolve([]),
       hasLocation ? getFastDeliveryProducts(lat!, lng!) : Promise.resolve([]),
+      getBanners(),
     ]);
+  const activeBanners = (banners ?? []).filter((b: any) => b.is_active);
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-6">
-      <div className="mb-2">
-        <h1 className="text-xl font-semibold text-slate-900 dark:text-white">
-          {auth?.profile?.full_name ? `Hi, ${auth.profile.full_name} 👋` : "Everything, sorted."}
-        </h1>
-        <p className="text-sm text-slate-500">Shop from local stores near you, delivered fast.</p>
-      </div>
+    <div className="bg-slate-100 pb-8 dark:bg-indigo-900">
+      <HeroBannerCarousel banners={activeBanners as any} />
 
-      <HomeLocationGate />
+      <div className="mx-auto max-w-7xl px-4 pt-4">
+        <div className="mb-2">
+          <h1 className="text-xl font-semibold text-slate-900 dark:text-white">
+            {auth?.profile?.full_name ? `Hi, ${auth.profile.full_name} 👋` : "Everything, sorted."}
+          </h1>
+          <p className="text-sm text-slate-500">Shop from local stores near you, delivered fast.</p>
+        </div>
 
-      {hasLocation && <NearbyShopsRail shops={nearbyShops} />}
+        <HomeLocationGate />
 
-      {categories && categories.length > 0 && <CategoryRail categories={categories} />}
+        {hasLocation && <NearbyShopsRail shops={nearbyShops} />}
 
-      <FlashSaleSection products={flashSaleProducts as any} />
+        {categories && categories.length > 0 && <CategoryRail categories={categories} />}
 
-      {offers.length > 0 && <OffersRail offers={offers as any} />}
+        <div className="mt-4">
+          <FlashSaleSection products={flashSaleProducts as any} />
+        </div>
 
-      <section className="mt-8">
-        <h2 className="mb-3 text-lg font-semibold text-slate-900 dark:text-white">
-          All Products
-        </h2>
-        {allProducts.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-slate-200 p-12 text-center text-slate-400">
-            No products yet — check back soon.
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
-            {allProducts.map((product: any) => (
-              <ProductCard key={product.id} product={product} />
-            ))}
+        {offers.length > 0 && (
+          <div className="mt-4 rounded-lg border border-slate-200 bg-white p-4 shadow-card dark:border-slate-700 dark:bg-indigo-800">
+            <OffersRail offers={offers as any} />
           </div>
         )}
-      </section>
 
-      {hasLocation && <FastDeliverySection products={fastDeliveryProducts as any} />}
+        <section className="mt-4 rounded-lg border border-slate-200 bg-white p-4 shadow-card dark:border-slate-700 dark:bg-indigo-800">
+          <h2 className="mb-3 text-base font-semibold text-slate-900 dark:text-white">
+            All Products
+          </h2>
+          {allProducts.length === 0 ? (
+            <div className="rounded-lg border border-dashed border-slate-200 p-12 text-center text-slate-400">
+              No products yet — check back soon.
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
+              {allProducts.map((product: any) => (
+                <ProductCard key={product.id} product={product} />
+              ))}
+            </div>
+          )}
+        </section>
 
-      <div className="mt-10 text-center">
-        <Link href="/products" className="text-sm font-medium text-brand-600 hover:underline">
-          View all products →
-        </Link>
+        {hasLocation && <FastDeliverySection products={fastDeliveryProducts as any} />}
+
+        <div className="mt-6 text-center">
+          <Link href="/products" className="text-sm font-medium text-brand-600 hover:underline">
+            View all products →
+          </Link>
+        </div>
       </div>
     </div>
   );
-            }
+      }
