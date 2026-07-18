@@ -1,4 +1,4 @@
-import { getProductBySlug, getProductReviews } from "@/actions/products";
+import { getProductBySlug, getProductReviews, incrementProductView } from "@/actions/products";
 import { getSimilarProducts } from "@/actions/similar";
 import { notFound } from "next/navigation";
 import Image from "next/image";
@@ -31,6 +31,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
   if (!product) notFound();
 
   const reviews = await getProductReviews(product.id);
+  void incrementProductView(product.id); // fire-and-forget; trending data, not critical path
   const similar = await getSimilarProducts(
     product.id,
     (product as any).category?.slug ?? null,
@@ -100,4 +101,5 @@ export default async function ProductDetailPage({ params }: PageProps) {
       <SimilarProducts items={similar} />
     </div>
   );
-}
+              }
+        
