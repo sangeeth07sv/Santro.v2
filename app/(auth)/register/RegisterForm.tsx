@@ -37,6 +37,10 @@ export function RegisterForm() {
 
       <form action={handleSubmit} className="mt-8 space-y-4">
         <div>
+          <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">Full Name</label>
+          <input name="fullName" required className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-100 dark:bg-slate-800 dark:border-slate-700" />
+        </div>
+        <div>
           <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-200">I am a...</label>
           <div className="grid grid-cols-3 gap-2">
             {ROLES.map((r) => (
@@ -57,10 +61,6 @@ export function RegisterForm() {
               </label>
             ))}
           </div>
-        </div>
-        <div>
-          <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">Full Name</label>
-          <input name="fullName" required className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-100 dark:bg-slate-800 dark:border-slate-700" />
         </div>
         <div>
           <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">Email</label>
