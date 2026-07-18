@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { getCurrentUser } from "@/actions/auth";
+import { getProducts } from "@/actions/products";
+import { ProductCard } from "@/components/shop/ProductCard";
 import { Store, Truck, ShoppingBag, ArrowRight } from "lucide-react";
 
 const DASHBOARDS = [
@@ -28,6 +30,41 @@ const DASHBOARDS = [
 
 export default async function HomePage() {
   const auth = await getCurrentUser();
+
+  // Logged-in customers land straight on the product catalog instead of the
+  // role-picker below.
+  if (auth?.profile?.role === "customer") {
+    const { products } = await getProducts({ sort: "newest" });
+
+    return (
+      <div className="mx-auto max-w-7xl px-4 py-8">
+        <div className="mb-6">
+          <h1 className="text-2xl font-semibold text-slate-900 dark:text-white">
+            Welcome back{auth.profile?.full_name ? `, ${auth.profile.full_name}` : ""}
+          </h1>
+          <p className="mt-1 text-sm text-slate-500">Here's what's new on SANTRO.</p>
+        </div>
+
+        {products.length === 0 ? (
+          <div className="rounded-xl border border-dashed border-slate-200 p-16 text-center text-slate-400">
+            No products yet — check back soon.
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
+            {products.map((product: any) => (
+              <ProductCard key={product.id} product={product} />
+            ))}
+          </div>
+        )}
+
+        <div className="mt-8 text-center">
+          <Link href="/products" className="text-sm font-medium text-brand-600 hover:underline">
+            View all products →
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-16">
