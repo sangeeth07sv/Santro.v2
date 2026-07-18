@@ -1,4 +1,4 @@
-import { getCurrentUser } from "@/actions/auth";
+import { getCurrentUser, logout } from "@/actions/auth";
 import { getUserOrders } from "@/actions/orders";
 import { redirect } from "next/navigation";
 import Link from "next/link";
@@ -71,7 +71,16 @@ export default async function CustomerDashboardPage() {
           </div>
         )}
       </div>
+
+      <div className="mt-10 text-center">
+        <form action={logout}>
+          <button type="submit" className="text-sm text-slate-400 hover:text-slate-600 hover:underline dark:hover:text-slate-200">
+            Log out
+          </button>
+        </form>
+      </div>
     </div>
   );
-              }
+}
+
             
