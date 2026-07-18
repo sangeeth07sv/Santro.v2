@@ -2,8 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { motion } from "framer-motion";
-import { Heart, ShoppingCart, Star } from "lucide-react";
+import { Heart, Star } from "lucide-react";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import { addToCart, toggleWishlist } from "@/actions/cart";
@@ -44,24 +43,14 @@ export function ProductCard({ product, wishlisted = false }: { product: Product;
   }
 
   return (
-    <motion.div
-      whileHover={{ y: -4 }}
-      transition={{ duration: 0.2 }}
-      className="card group relative overflow-hidden"
-    >
+    <div className="group relative flex flex-col overflow-hidden rounded-md border border-slate-200 bg-white transition-shadow hover:shadow-elevated dark:border-slate-700 dark:bg-indigo-800">
       <button
         onClick={handleWishlist}
         aria-label="Toggle wishlist"
-        className="absolute right-3 top-3 z-10 rounded-full bg-white/90 p-2 shadow-card backdrop-blur transition-transform hover:scale-110 dark:bg-slate-800/90"
+        className="absolute right-2 top-2 z-10 rounded-full bg-white/90 p-1.5 shadow-card dark:bg-slate-800/90"
       >
-        <Heart className={cn("h-4 w-4", isWishlisted ? "fill-marigold-500 text-marigold-500" : "text-slate-400")} />
+        <Heart className={cn("h-3.5 w-3.5", isWishlisted ? "fill-marigold-500 text-marigold-500" : "text-slate-400")} />
       </button>
-
-      {discountPct && (
-        <span className="absolute left-3 top-3 z-10 -rotate-3 rounded-sm bg-paisley-500 px-2 py-1 text-xs font-semibold text-white">
-          -{discountPct}%
-        </span>
-      )}
 
       <Link href={`/products/${product.slug}`} className="block">
         <div className="relative aspect-square overflow-hidden bg-surface-muted dark:bg-indigo-700">
@@ -70,41 +59,44 @@ export function ProductCard({ product, wishlisted = false }: { product: Product;
             alt={product.name}
             fill
             sizes="(max-width: 768px) 50vw, 25vw"
-            className="object-cover transition-transform duration-300 group-hover:scale-105"
+            className="object-contain p-3 transition-transform duration-300 group-hover:scale-105"
           />
         </div>
 
-        <div className="p-4">
-          {product.brand && <p className="text-xs uppercase tracking-wide text-ink/40">{product.brand}</p>}
-          <h3 className="mt-1 line-clamp-2 text-sm font-medium text-ink dark:text-slate-100">{product.name}</h3>
+        <div className="border-t border-slate-100 p-2.5 dark:border-slate-700">
+          {product.brand && <p className="text-[10px] uppercase tracking-wide text-ink/40">{product.brand}</p>}
+          <h3 className="line-clamp-2 text-xs font-medium leading-tight text-ink dark:text-slate-100">{product.name}</h3>
 
           {product.rating_count > 0 && (
-            <div className="mt-1 flex items-center gap-1 text-xs text-ink/50">
-              <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
-              {product.rating_avg.toFixed(1)} ({product.rating_count})
+            <div className="mt-1 flex items-center gap-1">
+              <span className="flex items-center gap-0.5 rounded bg-paisley-500 px-1.5 py-0.5 text-[10px] font-semibold text-white">
+                {product.rating_avg.toFixed(1)} <Star className="h-2.5 w-2.5 fill-white" />
+              </span>
+              <span className="text-[10px] text-ink/40">({product.rating_count})</span>
             </div>
           )}
 
-          <div className="mt-2 flex items-baseline gap-2">
-            <span className="price-tag">₹{product.price.toLocaleString("en-IN")}</span>
+          <div className="mt-1 flex flex-wrap items-baseline gap-x-1.5">
+            <span className="text-sm font-bold text-ink dark:text-white">₹{product.price.toLocaleString("en-IN")}</span>
             {product.compare_at_price && (
-              <span className="text-xs text-ink/40 line-through">
+              <span className="text-[11px] text-ink/40 line-through">
                 ₹{product.compare_at_price.toLocaleString("en-IN")}
               </span>
             )}
+            {discountPct && <span className="text-[11px] font-semibold text-paisley-600">{discountPct}% off</span>}
           </div>
         </div>
       </Link>
 
-      <div className="px-4 pb-4">
+      <div className="px-2.5 pb-2.5">
         <button
           onClick={handleAddToCart}
           disabled={isPending}
-          className="btn-primary w-full text-xs disabled:opacity-60"
+          className="w-full rounded-md bg-marigold-500 py-1.5 text-xs font-semibold text-indigo-900 transition-colors hover:bg-marigold-300 disabled:opacity-60"
         >
-          <ShoppingCart className="h-4 w-4" /> Add to Cart
+          Add to Cart
         </button>
       </div>
-    </motion.div>
+    </div>
   );
 }
