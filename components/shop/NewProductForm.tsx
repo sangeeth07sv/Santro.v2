@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { createShopProduct } from "@/actions/products";
 import { Button } from "@/components/ui/Button";
+import { ProductImageUpload } from "@/components/shop/ProductImageUpload";
 
 function slugify(name: string) {
   const base = name.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
@@ -73,11 +74,7 @@ export function NewProductForm({ categories }: { categories: { id: string; name:
         </div>
       )}
 
-      <div>
-        <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">Image URL</label>
-        <input name="image_url" type="url" className={inputClass} placeholder="https://..." />
-        <p className="mt-1 text-xs text-slate-400">Paste a hosted image link (e.g. from Cloudinary or Imgur).</p>
-      </div>
+      <ProductImageUpload />
 
       <div className="rounded-lg border border-dashed border-slate-200 p-3 dark:border-slate-700">
         <label className="flex items-center gap-2 text-sm font-medium text-slate-700 dark:text-slate-200">
@@ -95,4 +92,4 @@ export function NewProductForm({ categories }: { categories: { id: string; name:
       </Button>
     </form>
   );
-}
+            }
