@@ -2,7 +2,9 @@ import { getCurrentUser } from "@/actions/auth";
 import { getMyDeliveries, getAvailableDeliveries } from "@/actions/orders";
 import { redirect } from "next/navigation";
 import { DeliveryActions } from "@/components/shop/DeliveryActions";
-import { Truck } from "lucide-react";
+import { DeliveryRouteCard } from "@/components/shop/DeliveryRouteCard";
+import { LiveLocationBroadcaster } from "@/components/shop/LiveLocationBroadcaster";
+import { Truck, Navigation } from "lucide-react";
 
 export const metadata = { title: "Delivery Dashboard" };
 
@@ -35,7 +37,11 @@ export default async function DeliveryDashboardPage() {
           <div className="space-y-3">
             {active.map((order: any) => (
               <div key={order.id} className="card p-4">
-                <div className="flex items-center justify-between">
+                {/* Keeps GPS reporting on for this order as long as this page (or the
+                    order's own tracking screen) is open — not just while the partner
+                    is on the full-screen tracking view. */}
+                <LiveLocationBroadcaster orderId={order.id} active />
+                <div className="mb-3 flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium">{order.order_number}</p>
                     <p className="text-xs text-slate-400">{order.shipping_address?.city}, {order.shipping_address?.state}</p>
@@ -44,6 +50,10 @@ export default async function DeliveryDashboardPage() {
                     {order.status.replace(/_/g, " ")}
                   </span>
                 </div>
+                <DeliveryRouteCard order={order} />
+                <p className="mt-2 flex items-center gap-1 text-[11px] text-paisley-600">
+                  <Navigation className="h-3 w-3" /> Sharing your location with the customer and shop
+                </p>
                 <DeliveryActions orderId={order.id} status={order.status} />
               </div>
             ))}
@@ -61,12 +71,12 @@ export default async function DeliveryDashboardPage() {
         ) : (
           <div className="space-y-3">
             {available.map((order: any) => (
-              <div key={order.id} className="card flex items-center justify-between p-4">
-                <div>
+              <div key={order.id} className="card p-4">
+                <div className="mb-3 flex items-center justify-between">
                   <p className="text-sm font-medium">{order.order_number}</p>
-                  <p className="text-xs text-slate-400">{order.shipping_address?.city}, {order.shipping_address?.state}</p>
+                  <DeliveryActions orderId={order.id} status={order.status} canClaim />
                 </div>
-                <DeliveryActions orderId={order.id} status={order.status} canClaim />
+                <DeliveryRouteCard order={order} />
               </div>
             ))}
           </div>
@@ -74,4 +84,4 @@ export default async function DeliveryDashboardPage() {
       </section>
     </div>
   );
-}
+      }
