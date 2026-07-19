@@ -35,12 +35,15 @@ function riderIcon(heading: number | null) {
   });
 }
 
-function FitBounds({ points }: { points: [number, number][] }) {
+function FitBounds({ points, recenterSignal }: { points: [number, number][]; recenterSignal?: number }) {
   const map = useMap();
   useEffect(() => {
     if (points.length < 2) return;
     map.fitBounds(points, { padding: [48, 48] });
-  }, [map, points]);
+    // recenterSignal is intentionally in the deps array with no other use —
+    // bumping it (e.g. from a "recenter" button) re-runs this effect even
+    // when the points themselves haven't changed.
+  }, [map, points, recenterSignal]);
   return null;
 }
 
@@ -54,10 +57,12 @@ export function OrderRouteMap({
   pickup,
   drop,
   live,
+  recenterSignal,
 }: {
   pickup: Point | null;
   drop: Point | null;
   live?: { lat: number; lng: number; heading: number | null } | null;
+  recenterSignal?: number;
 }) {
   const [routeCoords, setRouteCoords] = useState<[number, number][] | null>(null);
 
@@ -116,7 +121,7 @@ export function OrderRouteMap({
         <Marker position={[drop.lat, drop.lng]} icon={dropIcon} />
         {live && <Marker position={[live.lat, live.lng]} icon={riderIcon(live.heading)} />}
         {routeCoords && <Polyline positions={routeCoords} pathOptions={{ color: "#181228", weight: 4 }} />}
-        {fitPoints.length >= 2 && <FitBounds points={fitPoints} />}
+        {fitPoints.length >= 2 && <FitBounds points={fitPoints} recenterSignal={recenterSignal} />}
       </MapContainer>
 
       {eta && (
@@ -127,4 +132,4 @@ export function OrderRouteMap({
       )}
     </div>
   );
-      }
+        }
