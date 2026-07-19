@@ -40,6 +40,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
       </div>
 
       <CustomerOrderTracking
+        orderId={order.id}
         status={order.status}
         pickup={order.pickup ?? null}
         drop={address?.latitude != null && address?.longitude != null
