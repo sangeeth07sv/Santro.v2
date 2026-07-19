@@ -2,6 +2,7 @@ import { getCurrentUser } from "@/actions/auth";
 import { getOrderById } from "@/actions/orders";
 import { redirect, notFound } from "next/navigation";
 import Image from "next/image";
+import { CustomerOrderTracking } from "@/components/shop/CustomerOrderTracking";
 
 export const metadata = { title: "Order Details" };
 
@@ -19,7 +20,7 @@ const STATUS_STYLES: Record<string, string> = {
 export default async function OrderDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const auth = await getCurrentUser();
-  if (!auth) redirect(`/login?redirect=/dashboard/orders/${id}`);
+  if (!auth) redirect(`/login/customer?redirect=/dashboard/orders/${id}`);
 
   const order = await getOrderById(id);
   if (!order) notFound();
@@ -37,6 +38,14 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
           {order.status.replace(/_/g, " ")}
         </span>
       </div>
+
+      <CustomerOrderTracking
+        status={order.status}
+        pickup={order.pickup ?? null}
+        drop={address?.latitude != null && address?.longitude != null
+          ? { lat: address.latitude, lng: address.longitude, label: "Drop-off" }
+          : null}
+      />
 
       <div className="card mb-4 divide-y divide-slate-100 dark:divide-slate-800">
         {(order.order_items ?? []).map((item: any) => (
