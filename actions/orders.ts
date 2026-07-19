@@ -166,6 +166,24 @@ export async function getUserOrders() {
   return data ?? [];
 }
 
+/** Resolves the pickup (shop) location for an order from its first item's product owner. */
+async function getPickupForOrder(supabase: any, order: any) {
+  const productId = order?.order_items?.[0]?.product_id;
+  if (!productId) return null;
+
+  const { data: product } = await supabase.from("products").select("owner_id").eq("id", productId).maybeSingle();
+  if (!product?.owner_id) return null;
+
+  const { data: owner } = await supabase
+    .from("profiles")
+    .select("shop_name, latitude, longitude")
+    .eq("id", product.owner_id)
+    .maybeSingle();
+  if (!owner || owner.latitude == null || owner.longitude == null) return null;
+
+  return { lat: owner.latitude, lng: owner.longitude, label: owner.shop_name || "Pickup location" };
+}
+
 /** Single order for the customer order detail page — owner only. */
 export async function getOrderById(orderId: string) {
   const supabase = await createClient();
@@ -178,7 +196,10 @@ export async function getOrderById(orderId: string) {
     .eq("id", orderId)
     .eq("user_id", user.id)
     .maybeSingle();
-  return data;
+  if (!data) return null;
+
+  const pickup = await getPickupForOrder(supabase, data);
+  return { ...data, pickup };
 }
 
 // ---------------- DELIVERY PARTNER ----------------
@@ -238,7 +259,10 @@ export async function getDeliveryOrderById(orderId: string) {
   if (!isAdmin) query = query.eq("delivery_partner_id", user.id);
 
   const { data } = await query.maybeSingle();
-  return data;
+  if (!data) return null;
+
+  const pickup = await getPickupForOrder(supabase, data);
+  return { ...data, pickup };
 }
 
 export async function updateDeliveryStatus(orderId: string, status: "out_for_delivery" | "delivered") {
