@@ -208,6 +208,22 @@ async function getPickupForOrder(supabase: any, order: any) {
   };
 }
 
+/**
+ * Full status timeline for an order (oldest first), for the "Confirmed at
+ * 9:15am, Shipped at 10:40am..." view. RLS on order_status_history mirrors
+ * orders visibility, so this is safe to call for any order the caller can
+ * already see — it just returns [] for orders they can't.
+ */
+export async function getOrderStatusHistory(orderId: string) {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("order_status_history")
+    .select("status, changed_at")
+    .eq("order_id", orderId)
+    .order("changed_at", { ascending: true });
+  return data ?? [];
+}
+
 /** Single order for the customer order detail page — owner only. */
 export async function getOrderById(orderId: string) {
   const supabase = await createClient();
@@ -442,4 +458,6 @@ export async function updateShopOrderStatus(orderId: string, status: string) {
 
 
 
+
+    
     
