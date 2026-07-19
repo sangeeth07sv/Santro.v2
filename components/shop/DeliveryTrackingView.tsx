@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
-import { ArrowLeft, Phone, Locate, Package, Check } from "lucide-react";
+import { ArrowLeft, Phone, Locate, Package, Check, MapPin, CircleDot } from "lucide-react";
 import { updateDeliveryStatus } from "@/actions/orders";
 import { OrderRouteMapLoader } from "@/components/shop/OrderRouteMapLoader";
 import { LiveLocationBroadcaster } from "@/components/shop/LiveLocationBroadcaster";
@@ -91,6 +91,26 @@ export function DeliveryTrackingView({ order }: { order: any }) {
         <span className="absolute right-4 top-4 z-[1000] rounded-full bg-indigo-900 px-3 py-1.5 text-xs font-semibold text-white shadow-card">
           {STATUS_LABEL[order.status] ?? order.status}
         </span>
+
+        {/* Pickup address pill — mirrors the top "current location" label on
+            ride-hailing route screens, so the partner sees the pickup point
+            without opening the sheet below. */}
+        <div className="absolute left-4 right-4 top-16 z-[1000] flex items-center gap-2 rounded-full bg-white px-3 py-2 shadow-card dark:bg-indigo-800">
+          <CircleDot className="h-4 w-4 shrink-0 text-paisley-500" />
+          <span className="truncate text-xs font-medium text-ink dark:text-white">
+            {pickupPoint?.shopName || pickupPoint?.label || "Shop location unavailable"}
+          </span>
+        </div>
+
+        {/* Drop address pill — same treatment for the destination, pinned
+            just above the bottom sheet so both addresses are visible on the
+            map at once. */}
+        <div className="absolute bottom-14 left-4 right-20 z-[1000] flex items-center gap-2 rounded-full bg-white px-3 py-2 shadow-card dark:bg-indigo-800">
+          <MapPin className="h-4 w-4 shrink-0 text-marigold-500" />
+          <span className="truncate text-xs font-medium text-ink dark:text-white">
+            {addressToShortLabel(addr) || "No address on file"}
+          </span>
+        </div>
 
         {/* Floating action rail */}
         <div className="absolute bottom-4 right-4 z-[1000] flex flex-col gap-2">
@@ -248,3 +268,4 @@ export function DeliveryTrackingView({ order }: { order: any }) {
     </div>
   );
         }
+        
