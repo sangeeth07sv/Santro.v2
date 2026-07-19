@@ -33,6 +33,9 @@ create table profiles (
   -- delivery_partner-only fields (null for other roles)
   vehicle_number text,
   is_available boolean not null default true,
+  -- shop_owner geocoded pickup point, used to plot the shop on delivery/route maps
+  latitude double precision,
+  longitude double precision,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -139,6 +142,9 @@ create table addresses (
   postal_code text not null,
   country text not null default 'IN',
   is_default boolean not null default false,
+  -- geocoded drop point, used for shipping-fee estimation and delivery route maps
+  latitude double precision,
+  longitude double precision,
   created_at timestamptz not null default now()
 );
 
@@ -202,6 +208,17 @@ create table payments (
   provider_order_id text,
   raw_response jsonb,
   created_at timestamptz not null default now()
+);
+
+-- DELIVERY LOCATIONS (one live-updating row per order — the assigned partner's
+-- last known GPS position, upserted on `order_id` while a delivery is active)
+create table delivery_locations (
+  order_id uuid primary key references orders(id) on delete cascade,
+  delivery_partner_id uuid not null references profiles(id) on delete cascade,
+  latitude double precision not null,
+  longitude double precision not null,
+  heading double precision,
+  updated_at timestamptz not null default now()
 );
 
 -- REVIEWS
@@ -354,6 +371,7 @@ alter table coupons enable row level security;
 alter table orders enable row level security;
 alter table order_items enable row level security;
 alter table payments enable row level security;
+alter table delivery_locations enable row level security;
 alter table reviews enable row level security;
 alter table notifications enable row level security;
 alter table banners enable row level security;
@@ -427,19 +445,55 @@ create policy "coupons_admin_write" on coupons for insert with check (is_admin()
 create policy "coupons_admin_update" on coupons for update using (is_admin());
 create policy "coupons_admin_delete" on coupons for delete using (is_admin());
 
--- ORDERS (own only; admin full; assigned delivery partner can view/update status)
+-- ORDERS (own only; admin full; assigned delivery partner can view/update status;
+-- shop owner can view orders that contain at least one of their products)
 create policy "orders_own_select" on orders for select
   using (auth.uid() = user_id or is_admin() or delivery_partner_id = auth.uid());
+create policy "orders_shop_owner_select" on orders for select
+  using (exists (
+    select 1 from order_items oi join products p on p.id = oi.product_id
+    where oi.order_id = orders.id and p.owner_id = auth.uid()
+  ));
 create policy "orders_own_insert" on orders for insert with check (auth.uid() = user_id);
 create policy "orders_admin_update" on orders for update using (is_admin());
 create policy "orders_delivery_update" on orders for update
   using (is_delivery_partner() and delivery_partner_id = auth.uid());
 
--- ORDER ITEMS (via parent order ownership)
+-- ORDER ITEMS (via parent order ownership, or the shop owner of that line item's product)
 create policy "order_items_select" on order_items for select
   using (exists (select 1 from orders o where o.id = order_id and (o.user_id = auth.uid() or is_admin())));
+create policy "order_items_shop_owner_select" on order_items for select
+  using (exists (select 1 from products p where p.id = product_id and p.owner_id = auth.uid()));
 create policy "order_items_insert" on order_items for insert
   with check (exists (select 1 from orders o where o.id = order_id and o.user_id = auth.uid()));
+
+- DELIVERY LOCATIONS (one live row per order; the assigned partner writes it,
+-- the customer, the shop owner of that order's products, and admin can read it)
+create policy "delivery_locations_partner_write" on delivery_locations for insert
+  with check (is_delivery_partner() and delivery_partner_id = auth.uid());
+create policy "delivery_locations_partner_update" on delivery_locations for update
+  using (is_delivery_partner() and delivery_partner_id = auth.uid());
+create policy "delivery_locations_partner_select" on delivery_locations for select
+  using (delivery_partner_id = auth.uid());
+create policy "delivery_locations_customer_select" on delivery_locations for select
+  using (exists (select 1 from orders o where o.id = order_id and o.user_id = auth.uid()));
+create policy "delivery_locations_shop_owner_select" on delivery_locations for select
+  using (exists (
+    select 1 from order_items oi join products p on p.id = oi.product_id
+    where oi.order_id = delivery_locations.order_id and p.owner_id = auth.uid()
+  ));
+create policy "delivery_locations_admin_all" on delivery_locations for all using (is_admin()) with check (is_admin());
+
+-- Make sure Realtime broadcasts changes on this table — useLiveDeliveryLocation
+-- subscribes via postgres_changes, which requires the table to be in this publication.
+do $$
+begin
+  if not exists (
+    select 1 from pg_publication_tables where pubname = 'supabase_realtime' and tablename = 'delivery_locations'
+  ) then
+    alter publication supabase_realtime add table delivery_locations;
+  end if;
+end $$;
 
 -- PAYMENTS (via parent order ownership, admin full)
 create policy "payments_select" on payments for select
@@ -482,3 +536,64 @@ alter default privileges in schema public grant usage, select on sequences to au
 -- SEED: make the first signed-up user an admin manually via:
 --   update profiles set role = 'admin' where id = '<your-user-uuid>';
 -- ============================================================================
+
+-- ============================================================================
+-- MIGRATION (only needed if you already ran this schema before the
+-- delivery-partner route map feature was added): adds the lat/lng columns
+-- used to plot the shop (pickup) and customer (drop) points on the map.
+-- Safe to run on a fresh project too — IF NOT EXISTS makes it a no-op.
+-- ============================================================================
+alter table profiles add column if not exists latitude double precision;
+alter table profiles add column if not exists longitude double precision;
+alter table addresses add column if not exists latitude double precision;
+alter table addresses add column if not exists longitude double precision;
+
+create table if not exists delivery_locations (
+  order_id uuid primary key references orders(id) on delete cascade,
+  delivery_partner_id uuid not null references profiles(id) on delete cascade,
+  latitude double precision not null,
+  longitude double precision not null,
+  heading double precision,
+  updated_at timestamptz not null default now()
+);
+alter table delivery_locations enable row level security;
+
+drop policy if exists "delivery_locations_partner_write" on delivery_locations;
+create policy "delivery_locations_partner_write" on delivery_locations for insert
+  with check (is_delivery_partner() and delivery_partner_id = auth.uid());
+drop policy if exists "delivery_locations_partner_update" on delivery_locations;
+create policy "delivery_locations_partner_update" on delivery_locations for update
+  using (is_delivery_partner() and delivery_partner_id = auth.uid());
+drop policy if exists "delivery_locations_partner_select" on delivery_locations;
+create policy "delivery_locations_partner_select" on delivery_locations for select
+  using (delivery_partner_id = auth.uid());
+drop policy if exists "delivery_locations_customer_select" on delivery_locations;
+create policy "delivery_locations_customer_select" on delivery_locations for select
+  using (exists (select 1 from orders o where o.id = order_id and o.user_id = auth.uid()));
+drop policy if exists "delivery_locations_shop_owner_select" on delivery_locations;
+create policy "delivery_locations_shop_owner_select" on delivery_locations for select
+  using (exists (
+    select 1 from order_items oi join products p on p.id = oi.product_id
+    where oi.order_id = delivery_locations.order_id and p.owner_id = auth.uid()
+  ));
+drop policy if exists "delivery_locations_admin_all" on delivery_locations;
+create policy "delivery_locations_admin_all" on delivery_locations for all using (is_admin()) with check (is_admin());
+
+do $$
+begin
+  if not exists (
+    select 1 from pg_publication_tables where pubname = 'supabase_realtime' and tablename = 'delivery_locations'
+  ) then
+    alter publication supabase_realtime add table delivery_locations;
+  end if;
+end $$;
+
+drop policy if exists "orders_shop_owner_select" on orders;
+create policy "orders_shop_owner_select" on orders for select
+  using (exists (
+    select 1 from order_items oi join products p on p.id = oi.product_id
+    where oi.order_id = orders.id and p.owner_id = auth.uid()
+  ));
+drop policy if exists "order_items_shop_owner_select" on order_items;
+create policy "order_items_shop_owner_select" on order_items for select
+  using (exists (select 1 from products p where p.id = product_id and p.owner_id = auth.uid()));
