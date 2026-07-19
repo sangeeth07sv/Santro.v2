@@ -46,3 +46,17 @@ export function createAdminClient() {
     { auth: { persistSession: false } }
   );
 }
+
+/**
+ * Cookie-free anon client for public, non-personalized read queries (banners,
+ * categories, active offers, etc). Doesn't touch cookies()/headers(), so it's
+ * safe to call from inside unstable_cache — letting these queries be cached
+ * across requests instead of hitting Supabase fresh on every page load.
+ */
+export function createPublicClient() {
+  return createSupabaseJsClient<Database>(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    { auth: { persistSession: false } }
+  );
+}
