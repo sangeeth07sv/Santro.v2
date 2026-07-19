@@ -266,6 +266,7 @@ export async function updateProduct(id: string, formData: FormData) {
 
   revalidatePath("/admin/products");
   revalidatePath("/products");
+  revalidatePath("/dashboard/shop");
   return { success: true };
 }
 
@@ -275,6 +276,7 @@ export async function deleteProduct(id: string) {
   if (error) return { error: error.message };
 
   revalidatePath("/admin/products");
+  revalidatePath("/dashboard/shop");
   return { success: true };
 }
 
@@ -291,4 +293,5 @@ export async function updateInventory(productId: string, variantKey: string, qua
   return { success: true };
     }
 
-         
+
+                                                                             
