@@ -202,6 +202,38 @@ export async function getOrderById(orderId: string) {
   return { ...data, pickup };
 }
 
+// ---------------- SHOP OWNER ----------------
+
+/** Orders containing at least one of the current shop owner's products. */
+export async function getMyShopOrders() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return [];
+
+  const { data } = await supabase
+    .from("orders")
+    .select("*, order_items(*)")
+    .order("created_at", { ascending: false });
+  return data ?? [];
+}
+
+/** Single order for the shop-owner tracking page — RLS already scopes this to their own products. */
+export async function getShopOrderById(orderId: string) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  const { data } = await supabase
+    .from("orders")
+    .select("*, order_items(*)")
+    .eq("id", orderId)
+    .maybeSingle();
+  if (!data) return null;
+
+  const pickup = await getPickupForOrder(supabase, data);
+  return { ...data, pickup };
+}
+
 // ---------------- DELIVERY PARTNER ----------------
 
 /** Orders assigned to the current delivery partner. */
@@ -304,3 +336,4 @@ export async function updateOrderStatus(orderId: string, status: string) {
   return { success: true };
 }
 
+          
