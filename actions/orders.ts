@@ -176,13 +176,19 @@ async function getPickupForOrder(supabase: any, order: any) {
 
   const { data: owner } = await supabase
     .from("profiles")
-    .select("shop_name, shop_address, latitude, longitude")
+    .select("shop_name, shop_address, latitude, longitude, phone")
     .eq("id", product.owner_id)
     .maybeSingle();
   if (!owner || owner.latitude == null || owner.longitude == null) return null;
 
   const label = [owner.shop_name, owner.shop_address].filter(Boolean).join(" — ") || "Pickup location";
-  return { lat: owner.latitude, lng: owner.longitude, label };
+  return {
+    lat: owner.latitude,
+    lng: owner.longitude,
+    label,
+    shopName: owner.shop_name || "Shop",
+    shopPhone: owner.phone || null,
+  };
 }
 
 /** Single order for the customer order detail page — owner only. */
@@ -376,4 +382,5 @@ export async function updateOrderStatus(orderId: string, status: string) {
 }
 
 
-        
+
+              
