@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Store, Search, Heart, ShoppingCart, User, LayoutDashboard, Package, Truck, Bell } from "lucide-react";
+import { Home, Store, Search, Heart, ShoppingCart, User, LayoutDashboard, Truck, Bell } from "lucide-react";
 import { cn } from "@/utils/cn";
 
 type Role = "customer" | "shop_owner" | "delivery_partner" | "admin" | null | undefined;
@@ -28,7 +28,6 @@ const SHOP_OWNER_ITEMS: NavItem[] = [
 
 const DELIVERY_ITEMS: NavItem[] = [
   { href: "/dashboard/delivery", label: "Deliveries", icon: Truck },
-  { href: "/dashboard/delivery", label: "Active", icon: Package },
   { href: "/products", label: "Shop", icon: Store },
   { href: "/dashboard", label: "Account", icon: User },
 ];
