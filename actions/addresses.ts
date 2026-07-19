@@ -36,6 +36,9 @@ export async function createAddress(formData: FormData) {
   if (!full_name || !phone || !line1 || !city || !state || !postal_code) {
     return { error: "Please fill in all required fields" };
   }
+  if (latitude == null || longitude == null) {
+    return { error: "Please pin your exact location on the map so delivery partners can find you" };
+  }
 
   // If this is set as default (or it's the user's first address), clear any existing default first.
   if (is_default) {
@@ -75,4 +78,4 @@ export async function deleteAddress(addressId: string) {
   revalidatePath("/checkout");
   revalidatePath("/dashboard/addresses");
   return { success: true };
-}
+      }
