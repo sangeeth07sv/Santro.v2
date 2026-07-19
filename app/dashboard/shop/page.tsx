@@ -3,7 +3,7 @@ import { getMyShopProducts } from "@/actions/products";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { Plus, Package, Settings, MapPin } from "lucide-react";
+import { Plus, Package, Settings, MapPin, Truck } from "lucide-react";
 import { ShopProductRowActions } from "@/components/shop/ShopProductRowActions";
 
 export const metadata = { title: "Shop Dashboard" };
@@ -30,6 +30,9 @@ export default async function ShopOwnerDashboardPage() {
           <p className="text-sm text-slate-500">Manage your products and track stock.</p>
         </div>
         <div className="flex gap-2">
+          <Link href="/dashboard/shop/orders" className="btn-outline">
+            <Truck className="h-4 w-4" /> Orders
+          </Link>
           <Link href="/dashboard/shop/settings" className="btn-outline">
             <Settings className="h-4 w-4" /> Shop Settings
           </Link>
@@ -115,4 +118,4 @@ export default async function ShopOwnerDashboardPage() {
       )}
     </div>
   );
-                                                                         }
+                    }
