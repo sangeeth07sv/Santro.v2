@@ -39,8 +39,9 @@ export function DeliveryRouteCard({ order }: { order: any }) {
         </div>
       </div>
 
-      {/* Route map */}
-      <div className="h-40 w-full">
+      {/* Route map — full route with shop pin, customer pin, road path and distance/ETA,
+          sized close to full-screen so the partner can actually read it (not a thumbnail). */}
+      <div className="h-80 w-full">
         {drop ? (
           <OrderRouteMapLoader pickup={pickup} drop={drop} />
         ) : (
