@@ -1,8 +1,9 @@
 import { getCurrentUser } from "@/actions/auth";
-import { getShopOrderById } from "@/actions/orders";
+import { getShopOrderById, getOrderStatusHistory } from "@/actions/orders";
 import { redirect, notFound } from "next/navigation";
 import { CustomerOrderTracking } from "@/components/shop/CustomerOrderTracking";
 import { ShopOrderStatusSelect } from "@/components/shop/ShopOrderStatusSelect";
+import { OrderStatusTimeline } from "@/components/shop/OrderStatusTimeline";
 
 export const metadata = { title: "Order Tracking" };
 
@@ -26,6 +27,8 @@ export default async function ShopOrderDetailPage({ params }: { params: Promise<
   const order = await getShopOrderById(id);
   if (!order) notFound(); // also covers "not one of this shop's orders" — RLS returns nothing rather than another shop's data
 
+  const history = await getOrderStatusHistory(id);
+
   return (
     <div className="mx-auto max-w-2xl px-4 py-8">
       <div className="mb-6 flex items-center justify-between">
@@ -41,6 +44,10 @@ export default async function ShopOrderDetailPage({ params }: { params: Promise<
       <div className="card mb-4 flex items-center justify-between p-4">
         <p className="text-sm font-medium text-slate-700 dark:text-slate-200">Update status</p>
         <ShopOrderStatusSelect orderId={order.id} status={order.status} />
+      </div>
+
+      <div className="mb-4">
+        <OrderStatusTimeline history={history} />
       </div>
 
       <CustomerOrderTracking
