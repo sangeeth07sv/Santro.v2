@@ -8,7 +8,7 @@ export const metadata = { title: "Delivery tracking" };
 export default async function DeliveryOrderPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const auth = await getCurrentUser();
-  if (!auth) redirect(`/login?redirect=/delivery/orders/${id}`);
+  if (!auth) redirect(`/login/delivery?redirect=/delivery/orders/${id}`);
 
   const role = auth.profile?.role;
   if (role !== "delivery_partner" && role !== "admin") redirect("/dashboard/delivery");
