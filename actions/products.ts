@@ -29,9 +29,7 @@ export async function getProducts(filters: ProductFilters = {}) {
   let query = supabase
     .from("products")
     .select(
-      hasLocation
-        ? "*, product_images(*), category:categories(name, slug), owner:profiles!products_owner_id_fkey(shop_name, latitude, longitude)"
-        : "*, product_images(*), category:categories(name, slug)",
+      "*, product_images(*), category:categories(name, slug), owner:profiles!products_owner_id_fkey(shop_name, latitude, longitude)",
       { count: "exact" }
     )
     .eq("is_active", true);
@@ -339,4 +337,5 @@ export async function updateInventory(productId: string, variantKey: string, qua
 
 
 
-      
+
+                        
