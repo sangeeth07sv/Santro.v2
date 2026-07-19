@@ -236,7 +236,7 @@ export async function getShopOrderById(orderId: string) {
 
 // ---------------- DELIVERY PARTNER ----------------
 
-/** Orders assigned to the current delivery partner. */
+/** Orders assigned to the current delivery partner, each with its shop pickup point attached. */
 export async function getMyDeliveries() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -247,10 +247,11 @@ export async function getMyDeliveries() {
     .select("*, order_items(*)")
     .eq("delivery_partner_id", user.id)
     .order("created_at", { ascending: false });
-  return data ?? [];
+
+  return Promise.all((data ?? []).map(async (order) => ({ ...order, pickup: await getPickupForOrder(supabase, order) })));
 }
 
-/** Unassigned confirmed/processing orders a delivery partner can pick up. */
+/** Unassigned confirmed/processing orders a delivery partner can pick up, each with its shop pickup point attached. */
 export async function getAvailableDeliveries() {
   const supabase = await createClient();
   const { data } = await supabase
@@ -259,7 +260,8 @@ export async function getAvailableDeliveries() {
     .in("status", ["confirmed", "processing"])
     .is("delivery_partner_id", null)
     .order("created_at", { ascending: true });
-  return data ?? [];
+
+  return Promise.all((data ?? []).map(async (order) => ({ ...order, pickup: await getPickupForOrder(supabase, order) })));
 }
 
 export async function claimDelivery(orderId: string) {
@@ -336,4 +338,5 @@ export async function updateOrderStatus(orderId: string, status: string) {
   return { success: true };
 }
 
-          
+
+  
