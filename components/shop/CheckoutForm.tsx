@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Bike, MapPin } from "lucide-react";
 import { createOrder } from "@/actions/orders";
 import { Button } from "@/components/ui/Button";
+import { OrderRouteMapLoader } from "@/components/shop/OrderRouteMapLoader";
 import { estimateDelivery, haversineKm, DEFAULT_SHIPPING_FEE } from "@/utils/geo";
 import type { Address } from "@/types/database";
 
@@ -41,19 +42,25 @@ export function CheckoutForm({
 
   // Distance to the farthest shop in the cart — that's the leg that determines
   // when the whole order can be delivered.
-  const estimate = useMemo(() => {
+  const { estimate, mapPickup, mapDrop } = useMemo(() => {
     const addrLat = (currentAddress as any)?.latitude;
     const addrLng = (currentAddress as any)?.longitude;
-    if (addrLat == null || addrLng == null) return null;
+    if (addrLat == null || addrLng == null) return { estimate: null, mapPickup: null, mapDrop: null };
 
-    const shopDistances = items
+    const shops = items
       .map((i) => i.product?.owner)
-      .filter((o): o is { shop_name?: string | null; latitude: number; longitude: number } => o?.latitude != null && o?.longitude != null)
-      .map((o) => haversineKm({ lat: addrLat, lng: addrLng }, { lat: o.latitude, lng: o.longitude }));
+      .filter((o): o is { shop_name?: string | null; latitude: number; longitude: number } => o?.latitude != null && o?.longitude != null);
+    if (shops.length === 0) return { estimate: null, mapPickup: null, mapDrop: null };
 
-    if (shopDistances.length === 0) return null;
-    const farthestKm = Math.max(...shopDistances);
-    return estimateDelivery(farthestKm);
+    const drop = { lat: addrLat, lng: addrLng, label: "Drop-off" };
+    const farthest = shops.reduce((a, b) =>
+      haversineKm(drop, { lat: a.latitude, lng: a.longitude }) >= haversineKm(drop, { lat: b.latitude, lng: b.longitude }) ? a : b
+    );
+    return {
+      estimate: estimateDelivery(haversineKm(drop, { lat: farthest.latitude, lng: farthest.longitude })),
+      mapPickup: { lat: farthest.latitude, lng: farthest.longitude, label: farthest.shop_name || "Shop" },
+      mapDrop: drop,
+    };
   }, [currentAddress, items]);
 
   function handleSubmit(formData: FormData) {
@@ -123,20 +130,27 @@ export function CheckoutForm({
               Pin an exact location on your address to see delivery time &amp; fee.
             </div>
           ) : (
-            <div className="flex items-center gap-4 p-4">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-indigo-50 dark:bg-slate-800">
-                <Bike className="h-5 w-5 text-indigo-600 dark:text-indigo-300" />
+            <>
+              <div className="flex items-center gap-4 p-4">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-indigo-50 dark:bg-slate-800">
+                  <Bike className="h-5 w-5 text-indigo-600 dark:text-indigo-300" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-slate-800 dark:text-white">Local Delivery</p>
+                  <p className="text-xs text-slate-500">
+                    {estimate.distanceKm} km away · Drop in ~{estimate.etaMinutes} min
+                  </p>
+                </div>
+                <span className="text-sm font-semibold text-slate-900 dark:text-white">
+                  {estimate.fee === 0 ? "Free" : `₹${estimate.fee}`}
+                </span>
               </div>
-              <div className="flex-1">
-                <p className="text-sm font-medium text-slate-800 dark:text-white">Local Delivery</p>
-                <p className="text-xs text-slate-500">
-                  {estimate.distanceKm} km away · Drop in ~{estimate.etaMinutes} min
-                </p>
-              </div>
-              <span className="text-sm font-semibold text-slate-900 dark:text-white">
-                {estimate.fee === 0 ? "Free" : `₹${estimate.fee}`}
-              </span>
-            </div>
+              {mapPickup && mapDrop && (
+                <div className="h-48 w-full border-t border-slate-100 dark:border-slate-700">
+                  <OrderRouteMapLoader pickup={mapPickup} drop={mapDrop} />
+                </div>
+              )}
+            </>
           )}
         </div>
 
