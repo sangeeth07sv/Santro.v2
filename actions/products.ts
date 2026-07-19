@@ -3,6 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { productSchema } from "@/utils/validation";
 import { revalidatePath } from "next/cache";
+import { haversineKm } from "@/utils/geo";
 
 export interface ProductFilters {
   category?: string;
@@ -10,19 +11,29 @@ export interface ProductFilters {
   minPrice?: number;
   maxPrice?: number;
   owner?: string;
-  sort?: "newest" | "price_asc" | "price_desc" | "rating";
+  sort?: "newest" | "price_asc" | "price_desc" | "rating" | "nearby";
   page?: number;
   pageSize?: number;
+  /** Customer's current position — when supplied, each product gets owner shop
+   *  location + distance_km attached so results can be plotted on a map. */
+  lat?: number;
+  lng?: number;
 }
 
 /** Public product listing with search, filters, and pagination (used by Server Components). */
 export async function getProducts(filters: ProductFilters = {}) {
   const supabase = await createClient();
-  const { category, search, minPrice, maxPrice, owner, sort = "newest", page = 1, pageSize = 12 } = filters;
+  const { category, search, minPrice, maxPrice, owner, sort = "newest", page = 1, pageSize = 12, lat, lng } = filters;
+  const hasLocation = lat != null && lng != null;
 
   let query = supabase
     .from("products")
-    .select("*, product_images(*), category:categories(name, slug)", { count: "exact" })
+    .select(
+      hasLocation
+        ? "*, product_images(*), category:categories(name, slug), owner:profiles!products_owner_id_fkey(shop_name, latitude, longitude)"
+        : "*, product_images(*), category:categories(name, slug)",
+      { count: "exact" }
+    )
     .eq("is_active", true);
 
   if (category) query = query.eq("category.slug", category);
@@ -31,20 +42,53 @@ export async function getProducts(filters: ProductFilters = {}) {
   if (minPrice !== undefined) query = query.gte("price", minPrice);
   if (maxPrice !== undefined) query = query.lte("price", maxPrice);
 
+  // "Nearby" sorts by distance, which isn't a DB column — we compute it in JS
+  // (same Haversine approach as the rest of the app, see actions/home.ts), so
+  // pull a wider, unpaginated batch here and paginate after sorting below.
+  const sortingByDistance = sort === "nearby" && hasLocation;
+
   switch (sort) {
     case "price_asc": query = query.order("price", { ascending: true }); break;
     case "price_desc": query = query.order("price", { ascending: false }); break;
     case "rating": query = query.order("rating_avg", { ascending: false }); break;
+    case "nearby": query = query.order("created_at", { ascending: false }); break; // re-sorted below if we have a location
     default: query = query.order("created_at", { ascending: false });
   }
 
-  const from = (page - 1) * pageSize;
-  query = query.range(from, from + pageSize - 1);
+  // Distance-sorted results need every matching row in hand before we can order
+  // and page them, so skip the DB-level range() in that case (capped at 200 —
+  // fine at current scale, same tradeoff getNearbyShops in actions/home.ts makes).
+  if (!sortingByDistance) {
+    const from = (page - 1) * pageSize;
+    query = query.range(from, from + pageSize - 1);
+  } else {
+    query = query.limit(200);
+  }
 
   const { data, count, error } = await query;
   if (error) throw new Error(error.message);
 
-  return { products: data ?? [], total: count ?? 0, page, pageSize };
+  let products = data ?? [];
+
+  if (hasLocation) {
+    products = products.map((p: any) => ({
+      ...p,
+      distance_km:
+        p.owner?.latitude != null && p.owner?.longitude != null
+          ? Math.round(haversineKm({ lat: lat!, lng: lng! }, { lat: p.owner.latitude, lng: p.owner.longitude }) * 10) / 10
+          : null,
+    }));
+  }
+
+  if (sortingByDistance) {
+    products = products.sort((a: any, b: any) => (a.distance_km ?? Infinity) - (b.distance_km ?? Infinity));
+    const total = products.length;
+    const from = (page - 1) * pageSize;
+    products = products.slice(from, from + pageSize);
+    return { products, total, page, pageSize };
+  }
+
+  return { products, total: count ?? 0, page, pageSize };
 }
 
 export async function getProductBySlug(slug: string) {
@@ -294,4 +338,5 @@ export async function updateInventory(productId: string, variantKey: string, qua
     }
 
 
-                                                                             
+
+      
