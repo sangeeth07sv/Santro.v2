@@ -140,7 +140,7 @@ export async function createOrder(formData: FormData) {
   const { data: cart } = await supabase.from("carts").select("id").eq("user_id", user.id).single();
   if (cart) await supabase.from("cart_items").delete().eq("cart_id", cart.id);
 
-  // 7. Notify the user
+  // 7. Notify the customer
   await supabase.from("notifications").insert({
     user_id: user.id,
     title: "Order placed!",
@@ -149,7 +149,24 @@ export async function createOrder(formData: FormData) {
     link: `/dashboard/orders/${order.id}`,
   });
 
+  // 8. Notify each shop that had a product in this order — previously only
+  // the customer was told, so a shop owner had no way to know a new order
+  // existed until they happened to check their orders page.
+  const shopOwnerIds = Array.from(new Set(items.map((i: any) => i.product?.owner_id).filter(Boolean)));
+  if (shopOwnerIds.length > 0) {
+    await supabase.from("notifications").insert(
+      shopOwnerIds.map((ownerId) => ({
+        user_id: ownerId as string,
+        title: "New order",
+        message: `Order ${order.order_number} includes one of your products — take a look.`,
+        type: "order_update",
+        link: `/dashboard/shop/orders/${order.id}`,
+      }))
+    );
+  }
+
   revalidatePath("/dashboard/orders");
+  revalidatePath("/dashboard/shop/orders");
   return { success: true, orderId: order.id, requiresPayment: parsed.data.payment_method !== "cod" };
 }
 
@@ -294,13 +311,13 @@ export async function getMyDeliveries() {
   return Promise.all((data ?? []).map(async (order) => ({ ...order, pickup: await getPickupForOrder(supabase, order) })));
 }
 
-/** Unassigned confirmed/processing orders a delivery partner can pick up, each with its shop pickup point attached. */
+/** Unassigned orders a shop has marked ready for pickup, each with its shop pickup point attached. */
 export async function getAvailableDeliveries() {
   const supabase = await createClient();
   const { data } = await supabase
     .from("orders")
     .select("*, order_items(*)")
-    .in("status", ["confirmed", "processing"])
+    .eq("status", "ready_for_pickup")
     .is("delivery_partner_id", null)
     .order("created_at", { ascending: true });
 
@@ -381,6 +398,48 @@ export async function updateOrderStatus(orderId: string, status: string) {
   return { success: true };
 }
 
+// ---------------- SHOP OWNER ----------------
+
+// Deliberately excludes "shipped" / "out_for_delivery" / "delivered" (those
+// are only ever set by claimDelivery()/updateDeliveryStatus() once a partner
+// is involved) and "pending"/"refunded" (admin/payment-flow concerns). RLS
+// (orders_shop_owner_update) already scopes rows to this shop owner's own
+// orders — this list is the second layer, restricting which values they can
+// move an order *to*.
+const SHOP_OWNER_ALLOWED_STATUSES = ["confirmed", "processing", "ready_for_pickup", "cancelled"];
+
+export async function updateShopOrderStatus(orderId: string, status: string) {
+  if (!SHOP_OWNER_ALLOWED_STATUSES.includes(status)) {
+    return { error: "That status can't be set from the shop dashboard." };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.from("orders").update({ status }).eq("id", orderId);
+  if (error) return { error: error.message };
+
+  const { data: order } = await supabase.from("orders").select("user_id, order_number").eq("id", orderId).single();
+  if (order) {
+    const message =
+      status === "ready_for_pickup"
+        ? `Order ${order.order_number} is packed and ready — waiting for a delivery partner.`
+        : `Order ${order.order_number} is now "${status}".`;
+    await supabase.from("notifications").insert({
+      user_id: order.user_id,
+      title: "Order update",
+      message,
+      type: "order_update",
+      link: `/dashboard/orders/${orderId}`,
+    });
+  }
+
+  revalidatePath("/dashboard/shop/orders");
+  revalidatePath(`/dashboard/shop/orders/${orderId}`);
+  revalidatePath("/dashboard/orders");
+  revalidatePath("/dashboard/delivery");
+  return { success: true };
+}
 
 
-              
+
+
+    
