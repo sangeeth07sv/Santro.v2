@@ -2,41 +2,41 @@
 
 import { useTransition } from "react";
 import { toast } from "sonner";
-import { updateShopOrderStatus } from "@/actions/orders";
+import { updateOrderStatus } from "@/actions/orders";
 
-// Kept in sync with SHOP_OWNER_ALLOWED_STATUSES in actions/orders.ts — the
-// server re-checks this list too, so this is just what the UI offers.
-const STATUSES = ["confirmed", "processing", "ready_for_pickup", "cancelled"];
+// Full order lifecycle — admin can move an order to any status. Matches the
+// order_status enum in supabase/schema.sql and STATUS_ORDER in actions/orders.ts.
+const STATUSES = [
+  "pending",
+  "confirmed",
+  "processing",
+  "shipped",
+  "out_for_delivery",
+  "delivered",
+  "cancelled",
+  "refunded",
+];
 
 const LABELS: Record<string, string> = {
+  pending: "Pending",
   confirmed: "Confirmed",
   processing: "Processing",
-  ready_for_pickup: "Ready for pickup",
+  shipped: "Shipped",
+  out_for_delivery: "Out for delivery",
+  delivered: "Delivered",
   cancelled: "Cancelled",
+  refunded: "Refunded",
 };
 
-export function ShopOrderStatusSelect({ orderId, status }: { orderId: string; status: string }) {
+export function OrderStatusSelect({ orderId, status }: { orderId: string; status: string }) {
   const [isPending, startTransition] = useTransition();
-
-  // The order may already be past what a shop owner can set (shipped,
-  // delivered, etc. — set by the delivery partner or admin). Show it as a
-  // disabled, read-only value rather than silently offering to roll it back.
-  const isShopEditable = STATUSES.includes(status);
 
   function handleChange(next: string) {
     startTransition(async () => {
-      const res = await updateShopOrderStatus(orderId, next);
+      const res = await updateOrderStatus(orderId, next);
       if (res?.error) toast.error(res.error);
-      else toast.success(next === "ready_for_pickup" ? "Marked ready for pickup" : "Order status updated");
+      else toast.success("Order status updated");
     });
-  }
-
-  if (!isShopEditable) {
-    return (
-      <span className="rounded-lg border border-slate-200 bg-slate-50 px-2 py-1 text-xs capitalize text-slate-500 dark:border-slate-700 dark:bg-slate-800">
-        {status.replace(/_/g, " ")}
-      </span>
-    );
   }
 
   return (
@@ -52,4 +52,3 @@ export function ShopOrderStatusSelect({ orderId, status }: { orderId: string; st
     </select>
   );
 }
-
