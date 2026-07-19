@@ -2,6 +2,7 @@ import { getCurrentUser } from "@/actions/auth";
 import { getShopOrderById } from "@/actions/orders";
 import { redirect, notFound } from "next/navigation";
 import { CustomerOrderTracking } from "@/components/shop/CustomerOrderTracking";
+import { ShopOrderStatusSelect } from "@/components/shop/ShopOrderStatusSelect";
 
 export const metadata = { title: "Order Tracking" };
 
@@ -35,6 +36,11 @@ export default async function ShopOrderDetailPage({ params }: { params: Promise<
         <span className={`rounded-full px-3 py-1 text-xs font-medium capitalize ${STATUS_STYLES[order.status] ?? ""}`}>
           {order.status.replace(/_/g, " ")}
         </span>
+      </div>
+
+      <div className="card mb-4 flex items-center justify-between p-4">
+        <p className="text-sm font-medium text-slate-700 dark:text-slate-200">Update status</p>
+        <ShopOrderStatusSelect orderId={order.id} status={order.status} />
       </div>
 
       <CustomerOrderTracking
