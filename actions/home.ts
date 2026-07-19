@@ -1,6 +1,7 @@
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createPublicClient } from "@/lib/supabase/server";
+import { unstable_cache } from "next/cache";
 import { haversineKm, estimateDelivery } from "@/utils/geo";
 
 export interface NearbyShop {
@@ -158,15 +159,22 @@ export async function getFastDeliveryProducts(
  * the "nearby offers" framing in the product spec, these are simply all
  * active, unexpired offers, not offers scoped to nearby shops specifically.
  */
+const getActiveOffersCached = unstable_cache(
+  async (limit: number) => {
+    const supabase = createPublicClient();
+    const { data } = await supabase
+      .from("coupons")
+      .select("*")
+      .eq("is_active", true)
+      .or(`expires_at.is.null,expires_at.gt.${new Date().toISOString()}`)
+      .order("created_at", { ascending: false })
+      .limit(limit);
+    return data ?? [];
+  },
+  ["active-offers"],
+  { revalidate: 60, tags: ["offers"] }
+);
+
 export async function getActiveOffers(limit = 8) {
-  const supabase = await createClient();
-  const { data } = await supabase
-    .from("coupons")
-    .select("*")
-    .eq("is_active", true)
-    .or(`expires_at.is.null,expires_at.gt.${new Date().toISOString()}`)
-    .order("created_at", { ascending: false })
-    .limit(limit);
-  return data ?? [];
-      }
-  
+  return getActiveOffersCached(limit);
+}
