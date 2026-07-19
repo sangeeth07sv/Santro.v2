@@ -10,6 +10,7 @@ const STATUS_STYLES: Record<string, string> = {
   pending: "bg-slate-100 text-slate-500",
   confirmed: "bg-blue-50 text-blue-600",
   processing: "bg-amber-50 text-amber-600",
+  ready_for_pickup: "bg-teal-50 text-teal-600",
   shipped: "bg-indigo-50 text-indigo-600",
   out_for_delivery: "bg-purple-50 text-purple-600",
   delivered: "bg-green-50 text-green-600",
