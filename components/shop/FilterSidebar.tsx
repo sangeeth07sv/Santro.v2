@@ -5,6 +5,7 @@ import { useState, useTransition } from "react";
 
 const SORT_OPTIONS = [
   { value: "newest", label: "Newest" },
+  { value: "nearby", label: "Nearby" },
   { value: "price_asc", label: "Price: Low to High" },
   { value: "price_desc", label: "Price: High to Low" },
   { value: "rating", label: "Top Rated" },
@@ -74,4 +75,5 @@ export function FilterSidebar() {
       </div>
     </aside>
   );
-}
+          }
+
