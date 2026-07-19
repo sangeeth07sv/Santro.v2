@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { ArrowLeft, MapPin, Package } from "lucide-react";
 import { updateOrderStatus } from "@/actions/orders";
 import { OrderRouteMap } from "@/components/shop/OrderRouteMap";
+import { LiveLocationBroadcaster } from "@/components/shop/LiveLocationBroadcaster";
 
 const STATUS_FLOW = ["confirmed", "processing", "shipped", "out_for_delivery", "delivered"] as const;
 const STATUS_LABEL: Record<string, string> = {
@@ -49,6 +50,10 @@ export function DeliveryTrackingView({ order }: { order: any }) {
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-surface dark:bg-surface-dark">
+      <LiveLocationBroadcaster
+        orderId={order.id}
+        active={order.status === "shipped" || order.status === "out_for_delivery"}
+      />
       {/* Map fills the top portion */}
       <div className="relative flex-1">
         <OrderRouteMap pickup={pickupPoint} drop={dropPoint} />
