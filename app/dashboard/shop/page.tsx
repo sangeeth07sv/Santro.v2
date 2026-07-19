@@ -3,13 +3,14 @@ import { getMyShopProducts } from "@/actions/products";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { Plus, Package } from "lucide-react";
+import { Plus, Package, Settings, MapPin } from "lucide-react";
+import { ShopProductRowActions } from "@/components/shop/ShopProductRowActions";
 
 export const metadata = { title: "Shop Dashboard" };
 
 export default async function ShopOwnerDashboardPage() {
   const auth = await getCurrentUser();
-  if (!auth) redirect("/login?redirect=/dashboard/shop");
+  if (!auth) redirect("/login/shop?redirect=/dashboard/shop");
   if (auth.profile?.role !== "shop_owner") redirect("/");
 
   const products = await getMyShopProducts();
@@ -17,20 +18,36 @@ export default async function ShopOwnerDashboardPage() {
     (sum: number, p: any) => sum + (p.inventory ?? []).reduce((n: number, i: any) => n + i.quantity, 0),
     0
   );
+  const hasLocation = auth.profile?.latitude != null && auth.profile?.longitude != null;
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8">
-      <div className="mb-8 flex items-center justify-between">
+      <div className="mb-8 flex items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold text-slate-900 dark:text-white">
             {auth.profile?.shop_name || "My Shop"}
           </h1>
           <p className="text-sm text-slate-500">Manage your products and track stock.</p>
         </div>
-        <Link href="/dashboard/shop/products/new" className="btn-primary">
-          <Plus className="h-4 w-4" /> New Product
-        </Link>
+        <div className="flex gap-2">
+          <Link href="/dashboard/shop/settings" className="btn-outline">
+            <Settings className="h-4 w-4" /> Shop Settings
+          </Link>
+          <Link href="/dashboard/shop/products/new" className="btn-primary">
+            <Plus className="h-4 w-4" /> New Product
+          </Link>
+        </div>
       </div>
+
+      {!hasLocation && (
+        <Link
+          href="/dashboard/shop/settings"
+          className="mb-6 flex items-center gap-2 rounded-lg border border-dashed border-marigold-500 bg-marigold-50 px-4 py-3 text-sm text-marigold-700 hover:bg-marigold-100 dark:bg-indigo-800 dark:text-marigold-300"
+        >
+          <MapPin className="h-4 w-4 shrink-0" />
+          Pin your shop's location so nearby customers can find you — tap to set it up.
+        </Link>
+      )}
 
       <div className="mb-8 grid grid-cols-2 gap-4 sm:grid-cols-3">
         <div className="card p-5">
@@ -64,6 +81,7 @@ export default async function ShopOwnerDashboardPage() {
                 <th className="p-4">Price</th>
                 <th className="p-4">Stock</th>
                 <th className="p-4">Status</th>
+                <th className="p-4">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -85,6 +103,9 @@ export default async function ShopOwnerDashboardPage() {
                         {p.is_active ? "Active" : "Draft"}
                       </span>
                     </td>
+                    <td className="p-4">
+                      <ShopProductRowActions id={p.id} />
+                    </td>
                   </tr>
                 );
               })}
@@ -94,4 +115,4 @@ export default async function ShopOwnerDashboardPage() {
       )}
     </div>
   );
-      }
+                                                                         }
