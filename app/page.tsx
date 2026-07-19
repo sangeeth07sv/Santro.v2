@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { getCurrentUser } from "@/actions/auth";
-import { createClient } from "@/lib/supabase/server";
+import { createPublicClient } from "@/lib/supabase/server";
 import {
   getNearbyShops,
   getFlashSaleProducts,
@@ -9,6 +9,7 @@ import {
 } from "@/actions/home";
 import { getProducts } from "@/actions/products";
 import { getBanners } from "@/actions/banners";
+import { unstable_cache } from "next/cache";
 import { ProductCard } from "@/components/shop/ProductCard";
 import { HeroBannerCarousel } from "@/components/shop/HeroBannerCarousel";
 import { HomeLocationGate } from "@/components/shop/HomeLocationGate";
@@ -84,17 +85,24 @@ export default async function HomePage({ searchParams }: PageProps) {
   const lng = params.lng ? Number(params.lng) : undefined;
   const hasLocation = lat != null && lng != null && !Number.isNaN(lat) && !Number.isNaN(lng);
 
-  const supabase = await createClient();
-  const categoriesPromise = supabase
-    .from("categories")
-    .select("id, name, slug, image_url")
-    .eq("is_active", true)
-    .order("sort_order", { ascending: true })
-    .limit(10);
+  const getHomeCategories = unstable_cache(
+    async () => {
+      const supabase = createPublicClient();
+      const { data } = await supabase
+        .from("categories")
+        .select("id, name, slug, image_url")
+        .eq("is_active", true)
+        .order("sort_order", { ascending: true })
+        .limit(10);
+      return data ?? [];
+    },
+    ["home-categories"],
+    { revalidate: 60, tags: ["categories"] }
+  );
 
-  const [{ data: categories }, flashSaleProducts, { products: allProducts }, offers, nearbyShops, fastDeliveryProducts, banners] =
+  const [categories, flashSaleProducts, { products: allProducts }, offers, nearbyShops, fastDeliveryProducts, banners] =
     await Promise.all([
-      categoriesPromise,
+      getHomeCategories(),
       getFlashSaleProducts(),
       getProducts({ pageSize: 12 }),
       getActiveOffers(),
@@ -159,4 +167,4 @@ export default async function HomePage({ searchParams }: PageProps) {
       </div>
     </div>
   );
-      }
+}
