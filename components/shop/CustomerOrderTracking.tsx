@@ -7,6 +7,7 @@ import { useLiveDeliveryLocation } from "@/hooks/useLiveDeliveryLocation";
 const STATUS_LABEL: Record<string, string> = {
   confirmed: "Confirmed — your shop is preparing this order",
   processing: "Preparing your order",
+  ready_for_pickup: "Ready for pickup — waiting for a delivery partner",
   shipped: "Picked up — on the way",
   out_for_delivery: "Out for delivery",
   delivered: "Delivered",
@@ -47,4 +48,5 @@ export function CustomerOrderTracking({ orderId, status, pickup, drop }: Props) 
       )}
     </div>
   );
-}
+      }
+  
