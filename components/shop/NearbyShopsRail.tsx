@@ -6,9 +6,9 @@ export function NearbyShopsRail({ shops }: { shops: NearbyShop[] }) {
   if (!shops.length) return null;
 
   return (
-    <section className="mt-8">
+    <section className="mt-4 rounded-lg border border-slate-200 bg-white p-4 shadow-card dark:border-slate-700 dark:bg-indigo-800">
       <div className="mb-3 flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Shops near you</h2>
+        <h2 className="text-base font-semibold text-slate-900 dark:text-white">Shops near you</h2>
       </div>
       <div className="scrollbar-hide -mx-4 flex gap-3 overflow-x-auto px-4 pb-1">
         {shops.map((shop) => (
