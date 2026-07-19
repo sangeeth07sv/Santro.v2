@@ -12,17 +12,19 @@ const ROLE_HOME: Record<string, string> = {
   customer: "/",
   shop_owner: "/dashboard/shop",
   delivery_partner: "/dashboard/delivery",
+  admin: "/admin",
 };
 
 const ROLE_LABEL: Record<string, string> = {
   customer: "customer",
   shop_owner: "shop owner",
   delivery_partner: "delivery partner",
+  admin: "admin",
 };
 
 interface Props {
   /** Restrict this page to a single role. Omit to allow any role (used by the default /login page). */
-  expectedRole?: "customer" | "shop_owner" | "delivery_partner";
+  expectedRole?: "customer" | "shop_owner" | "delivery_partner" | "admin";
   title?: string;
   subtitle?: string;
 }
@@ -110,4 +112,5 @@ export function LoginForm({ expectedRole, title = "Welcome back", subtitle = "Si
       </div>
     </div>
   );
-}
+          }
+
