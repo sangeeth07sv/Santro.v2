@@ -1,14 +1,18 @@
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createPublicClient } from "@/lib/supabase/server";
 import { bannerSchema } from "@/utils/validation";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag, unstable_cache } from "next/cache";
 
-export async function getBanners() {
-  const supabase = await createClient();
-  const { data } = await supabase.from("banners").select("*").order("sort_order", { ascending: true });
-  return data ?? [];
-}
+export const getBanners = unstable_cache(
+  async () => {
+    const supabase = createPublicClient();
+    const { data } = await supabase.from("banners").select("*").order("sort_order", { ascending: true });
+    return data ?? [];
+  },
+  ["home-banners"],
+  { revalidate: 60, tags: ["banners"] }
+);
 
 export async function createBanner(formData: FormData) {
   const raw = Object.fromEntries(formData.entries());
@@ -24,6 +28,7 @@ export async function createBanner(formData: FormData) {
   if (error) return { error: error.message };
 
   revalidatePath("/admin/banners");
+  revalidateTag("banners");
   return { success: true };
 }
 
@@ -33,6 +38,7 @@ export async function toggleBannerActive(id: string, isActive: boolean) {
   if (error) return { error: error.message };
 
   revalidatePath("/admin/banners");
+  revalidateTag("banners");
   return { success: true };
 }
 
@@ -42,5 +48,6 @@ export async function deleteBanner(id: string) {
   if (error) return { error: error.message };
 
   revalidatePath("/admin/banners");
+  revalidateTag("banners");
   return { success: true };
-}
+    }
