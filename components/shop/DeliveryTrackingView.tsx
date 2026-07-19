@@ -3,8 +3,9 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { ArrowLeft, LocateFixed, MapPin, Package } from "lucide-react";
+import { ArrowLeft, MapPin, Package } from "lucide-react";
 import { updateOrderStatus } from "@/actions/orders";
+import { OrderRouteMap } from "@/components/shop/OrderRouteMap";
 
 const STATUS_FLOW = ["confirmed", "processing", "shipped", "out_for_delivery", "delivered"] as const;
 const STATUS_LABEL: Record<string, string> = {
@@ -25,10 +26,14 @@ function addressToQuery(addr: any) {
 export function DeliveryTrackingView({ order }: { order: any }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const [mapKey, setMapKey] = useState(0);
 
-  const query = addressToQuery(order.shipping_address);
-  const mapSrc = `https://www.google.com/maps?q=${encodeURIComponent(query)}&output=embed`;
+  const addr = order.shipping_address as any;
+  const dropPoint =
+    addr?.latitude != null && addr?.longitude != null
+      ? { lat: addr.latitude, lng: addr.longitude, label: addressToQuery(addr) }
+      : null;
+  const pickupPoint = order.pickup ?? null;
+  const displayAddress = addressToQuery(addr);
   const currentIndex = STATUS_FLOW.indexOf(order.status);
   const nextStatus = currentIndex >= 0 && currentIndex < STATUS_FLOW.length - 1 ? STATUS_FLOW[currentIndex + 1] : null;
   const itemCount = order.order_items?.reduce((n: number, i: any) => n + i.quantity, 0) ?? 0;
@@ -46,43 +51,22 @@ export function DeliveryTrackingView({ order }: { order: any }) {
     <div className="fixed inset-0 z-50 flex flex-col bg-surface dark:bg-surface-dark">
       {/* Map fills the top portion */}
       <div className="relative flex-1">
-        {query ? (
-          <iframe
-            key={mapKey}
-            title={`Drop-off location for ${order.order_number}`}
-            src={mapSrc}
-            className="h-full w-full border-0"
-            loading="eager"
-          />
-        ) : (
-          <div className="flex h-full items-center justify-center text-sm text-ink/40">
-            No address on file for this order.
-          </div>
-        )}
+        <OrderRouteMap pickup={pickupPoint} drop={dropPoint} />
 
         {/* Back button */}
         <button
           onClick={() => router.push("/dashboard/delivery")}
           aria-label="Back"
-          className="absolute left-4 top-4 flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-card dark:bg-indigo-800"
+          className="absolute left-4 top-4 z-[1000] flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-card dark:bg-indigo-800"
         >
           <ArrowLeft className="h-5 w-5 text-ink dark:text-white" />
         </button>
 
         {/* Drop-off address pill */}
-        <div className="absolute left-16 right-4 top-4 flex items-center gap-2 rounded-full bg-white px-4 py-2.5 text-sm font-medium text-ink shadow-card dark:bg-indigo-800 dark:text-white">
+        <div className="absolute left-16 right-4 top-4 z-[1000] flex items-center gap-2 rounded-full bg-white px-4 py-2.5 text-sm font-medium text-ink shadow-card dark:bg-indigo-800 dark:text-white">
           <MapPin className="h-4 w-4 shrink-0 text-marigold-600" />
-          <span className="truncate">{query || "No address on file"}</span>
+          <span className="truncate">{displayAddress || "No address on file"}</span>
         </div>
-
-        {/* Recenter control */}
-        <button
-          onClick={() => setMapKey((k) => k + 1)}
-          aria-label="Recenter map"
-          className="absolute bottom-4 right-4 flex h-11 w-11 items-center justify-center rounded-full bg-white shadow-card dark:bg-indigo-800"
-        >
-          <LocateFixed className="h-5 w-5 text-indigo-700 dark:text-indigo-200" />
-        </button>
       </div>
 
       {/* Bottom sheet */}
