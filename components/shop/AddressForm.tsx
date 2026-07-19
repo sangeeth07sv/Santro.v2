@@ -13,10 +13,12 @@ export function AddressForm() {
   const [fields, setFields] = useState({ line1: "", city: "", state: "", postal_code: "" });
 
   function handleSubmit(formData: FormData) {
-    if (pin) {
-      formData.set("latitude", String(pin.lat));
-      formData.set("longitude", String(pin.lng));
+    if (!pin) {
+      toast.error("Please pin your exact location on the map — delivery partners need this to find you.");
+      return;
     }
+    formData.set("latitude", String(pin.lat));
+    formData.set("longitude", String(pin.lng));
     startTransition(async () => {
       const res = await createAddress(formData);
       if (res?.error) toast.error(res.error);
@@ -30,7 +32,9 @@ export function AddressForm() {
   return (
     <form action={handleSubmit} className="card space-y-4 p-5">
       <div>
-        <label className="mb-1 block text-sm font-medium text-ink dark:text-slate-100">Pin your location</label>
+        <label className="mb-1 block text-sm font-medium text-ink dark:text-slate-100">
+          Pin your location <span className="text-red-500">*</span>
+        </label>
         {!showPicker ? (
           <button
             type="button"
@@ -130,9 +134,9 @@ export function AddressForm() {
         Set as default address
       </label>
 
-      <button type="submit" disabled={isPending} className="btn-primary w-full disabled:opacity-50">
-        {isPending ? "Saving…" : "Save address"}
+      <button type="submit" disabled={isPending || !pin} className="btn-primary w-full disabled:opacity-50">
+        {isPending ? "Saving…" : !pin ? "Pin your location to continue" : "Save address"}
       </button>
     </form>
   );
-}
+          }
