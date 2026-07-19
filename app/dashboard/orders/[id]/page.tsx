@@ -1,8 +1,9 @@
 import { getCurrentUser } from "@/actions/auth";
-import { getOrderById } from "@/actions/orders";
+import { getOrderById, getOrderStatusHistory } from "@/actions/orders";
 import { redirect, notFound } from "next/navigation";
 import Image from "next/image";
 import { CustomerOrderTracking } from "@/components/shop/CustomerOrderTracking";
+import { OrderStatusTimeline } from "@/components/shop/OrderStatusTimeline";
 
 export const metadata = { title: "Order Details" };
 
@@ -26,6 +27,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
   const order = await getOrderById(id);
   if (!order) notFound();
 
+  const history = await getOrderStatusHistory(id);
   const address = order.shipping_address as any;
 
   return (
@@ -48,6 +50,10 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
           ? { lat: address.latitude, lng: address.longitude, label: "Drop-off" }
           : null}
       />
+
+      <div className="mb-4">
+        <OrderStatusTimeline history={history} />
+      </div>
 
       <div className="card mb-4 divide-y divide-slate-100 dark:divide-slate-800">
         {(order.order_items ?? []).map((item: any) => (
@@ -89,4 +95,4 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
       </div>
     </div>
   );
-}
+                                                     }
