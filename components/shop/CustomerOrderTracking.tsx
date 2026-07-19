@@ -2,6 +2,7 @@
 
 import { Package, Truck } from "lucide-react";
 import { OrderRouteMap } from "@/components/shop/OrderRouteMap";
+import { useLiveDeliveryLocation } from "@/hooks/useLiveDeliveryLocation";
 
 const STATUS_LABEL: Record<string, string> = {
   confirmed: "Confirmed — your shop is preparing this order",
@@ -12,14 +13,17 @@ const STATUS_LABEL: Record<string, string> = {
 };
 
 interface Props {
+  orderId: string;
   status: string;
   pickup: { lat: number; lng: number; label: string } | null;
   drop: { lat: number; lng: number; label: string } | null;
 }
 
-export function CustomerOrderTracking({ status, pickup, drop }: Props) {
-  if (!drop) return null;
+export function CustomerOrderTracking({ orderId, status, pickup, drop }: Props) {
   const isTrackable = ["shipped", "out_for_delivery"].includes(status);
+  const live = useLiveDeliveryLocation(isTrackable ? orderId : null);
+
+  if (!drop) return null;
 
   return (
     <div className="card mb-4 overflow-hidden">
@@ -29,7 +33,7 @@ export function CustomerOrderTracking({ status, pickup, drop }: Props) {
       </div>
       {isTrackable ? (
         <div className="h-64 w-full">
-          <OrderRouteMap pickup={pickup} drop={drop} />
+          <OrderRouteMap pickup={pickup} drop={drop} live={live} />
         </div>
       ) : (
         <div className="flex items-center gap-2 p-4 text-sm text-slate-400">
