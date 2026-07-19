@@ -20,6 +20,21 @@ const dropIcon = L.divIcon({
   iconAnchor: [10, 20],
 });
 
+function riderIcon(heading: number | null) {
+  const rotation = heading ?? 0;
+  return L.divIcon({
+    className: "",
+    html: `<div style="width:28px;height:28px;border-radius:50%;background:#181228;border:3px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;transform:rotate(${rotation}deg)">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M5 17a2 2 0 1 0 4 0a2 2 0 1 0-4 0"/><path d="M15 17a2 2 0 1 0 4 0a2 2 0 1 0-4 0"/>
+        <path d="M12 17V6l-3 3M6 17l3-6h6l3 6"/>
+      </svg>
+    </div>`,
+    iconSize: [28, 28],
+    iconAnchor: [14, 14],
+  });
+}
+
 function FitBounds({ points }: { points: [number, number][] }) {
   const map = useMap();
   useEffect(() => {
@@ -35,7 +50,15 @@ interface Point {
   label: string;
 }
 
-export function OrderRouteMap({ pickup, drop }: { pickup: Point | null; drop: Point | null }) {
+export function OrderRouteMap({
+  pickup,
+  drop,
+  live,
+}: {
+  pickup: Point | null;
+  drop: Point | null;
+  live?: { lat: number; lng: number; heading: number | null } | null;
+}) {
   const [routeCoords, setRouteCoords] = useState<[number, number][] | null>(null);
 
   useEffect(() => {
@@ -69,9 +92,17 @@ export function OrderRouteMap({ pickup, drop }: { pickup: Point | null; drop: Po
     );
   }
 
-  const center: [number, number] = pickup ? [(pickup.lat + drop.lat) / 2, (pickup.lng + drop.lng) / 2] : [drop.lat, drop.lng];
-  const fitPoints: [number, number][] = pickup ? [[pickup.lat, pickup.lng], [drop.lat, drop.lng]] : [];
-  const distanceKm = pickup ? haversineKm(pickup, drop) : null;
+  const center: [number, number] = live
+    ? [live.lat, live.lng]
+    : pickup
+    ? [(pickup.lat + drop.lat) / 2, (pickup.lng + drop.lng) / 2]
+    : [drop.lat, drop.lng];
+  const fitPoints: [number, number][] = [
+    ...(pickup ? [[pickup.lat, pickup.lng] as [number, number]] : []),
+    [drop.lat, drop.lng],
+    ...(live ? [[live.lat, live.lng] as [number, number]] : []),
+  ];
+  const distanceKm = live ? haversineKm(live, drop) : pickup ? haversineKm(pickup, drop) : null;
   const eta = distanceKm != null ? estimateDelivery(distanceKm) : null;
 
   return (
@@ -83,8 +114,9 @@ export function OrderRouteMap({ pickup, drop }: { pickup: Point | null; drop: Po
         />
         {pickup && <Marker position={[pickup.lat, pickup.lng]} icon={pickupIcon} />}
         <Marker position={[drop.lat, drop.lng]} icon={dropIcon} />
+        {live && <Marker position={[live.lat, live.lng]} icon={riderIcon(live.heading)} />}
         {routeCoords && <Polyline positions={routeCoords} pathOptions={{ color: "#181228", weight: 4 }} />}
-        {fitPoints.length === 2 && <FitBounds points={fitPoints} />}
+        {fitPoints.length >= 2 && <FitBounds points={fitPoints} />}
       </MapContainer>
 
       {eta && (
@@ -95,4 +127,4 @@ export function OrderRouteMap({ pickup, drop }: { pickup: Point | null; drop: Po
       )}
     </div>
   );
-      }
+    }
