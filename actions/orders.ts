@@ -176,12 +176,13 @@ async function getPickupForOrder(supabase: any, order: any) {
 
   const { data: owner } = await supabase
     .from("profiles")
-    .select("shop_name, latitude, longitude")
+    .select("shop_name, shop_address, latitude, longitude")
     .eq("id", product.owner_id)
     .maybeSingle();
   if (!owner || owner.latitude == null || owner.longitude == null) return null;
 
-  return { lat: owner.latitude, lng: owner.longitude, label: owner.shop_name || "Pickup location" };
+  const label = [owner.shop_name, owner.shop_address].filter(Boolean).join(" — ") || "Pickup location";
+  return { lat: owner.latitude, lng: owner.longitude, label };
 }
 
 /** Single order for the customer order detail page — owner only. */
@@ -215,6 +216,42 @@ export async function getMyShopOrders() {
     .select("*, order_items(*)")
     .order("created_at", { ascending: false });
   return data ?? [];
+}
+
+/** Top-line counts for the shop owner's home dashboard — scoped to their own orders via RLS. */
+export async function getShopAnalytics() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { totalOrders: 0, revenue: 0, paid: 0, unpaid: 0, statusBreakdown: [] as { status: string; count: number }[] };
+
+  const { data: orders } = await supabase
+    .from("orders")
+    .select("id, status, total, payments(status)")
+    .order("created_at", { ascending: false });
+
+  const rows = orders ?? [];
+  let revenue = 0;
+  let paid = 0;
+  let unpaid = 0;
+  const statusCounts = new Map<string, number>();
+
+  for (const o of rows as any[]) {
+    const isPaid = (o.payments ?? []).some((p: any) => p.status === "paid");
+    if (isPaid) {
+      paid += 1;
+      revenue += Number(o.total ?? 0);
+    } else {
+      unpaid += 1;
+    }
+    statusCounts.set(o.status, (statusCounts.get(o.status) ?? 0) + 1);
+  }
+
+  const STATUS_ORDER = ["pending", "confirmed", "processing", "shipped", "out_for_delivery", "delivered", "cancelled", "refunded"];
+  const statusBreakdown = STATUS_ORDER
+    .filter((s) => statusCounts.has(s))
+    .map((status) => ({ status, count: statusCounts.get(status)! }));
+
+  return { totalOrders: rows.length, revenue, paid, unpaid, statusBreakdown };
 }
 
 /** Single order for the shop-owner tracking page — RLS already scopes this to their own products. */
@@ -339,4 +376,4 @@ export async function updateOrderStatus(orderId: string, status: string) {
 }
 
 
-  
+        
