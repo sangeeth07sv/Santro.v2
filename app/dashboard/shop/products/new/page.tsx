@@ -7,7 +7,7 @@ export const metadata = { title: "New Product" };
 
 export default async function NewShopProductPage() {
   const auth = await getCurrentUser();
-  if (!auth) redirect("/login?redirect=/dashboard/shop/products/new");
+  if (!auth) redirect("/login/shop?redirect=/dashboard/shop/products/new");
   if (auth.profile?.role !== "shop_owner") redirect("/");
 
   const supabase = await createClient();
