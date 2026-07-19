@@ -4,7 +4,7 @@ import { useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
-import { login, signInWithGoogle } from "@/actions/auth";
+import { login } from "@/actions/auth";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/Button";
 
@@ -90,16 +90,6 @@ export function LoginForm({ expectedRole, title = "Welcome back", subtitle = "Si
           />
         </div>
         <Button type="submit" isLoading={isPending} className="w-full">Sign In</Button>
-      </form>
-
-      <div className="my-6 flex items-center gap-3">
-        <div className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />
-        <span className="text-xs text-slate-400">OR</span>
-        <div className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />
-      </div>
-
-      <form action={signInWithGoogle}>
-        <button type="submit" className="btn-outline w-full">Continue with Google</button>
       </form>
 
       <p className="mt-6 text-center text-sm text-slate-500">
