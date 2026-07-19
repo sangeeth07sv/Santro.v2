@@ -16,7 +16,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   // Defense-in-depth: middleware already gates /admin, this re-checks server-side
   // since layouts render even if middleware is ever misconfigured.
   const auth = await getCurrentUser();
-  if (!auth || auth.profile?.role !== "admin") redirect("/");
+  if (!auth) redirect("/login/admin?redirect=/admin");
+  if (auth.profile?.role !== "admin") redirect("/");
 
   return (
     <div className="mx-auto flex max-w-7xl gap-8 px-4 py-8">
