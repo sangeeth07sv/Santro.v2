@@ -7,6 +7,7 @@ import { ArrowLeft, MapPin, Package } from "lucide-react";
 import { updateOrderStatus } from "@/actions/orders";
 import { OrderRouteMap } from "@/components/shop/OrderRouteMap";
 import { LiveLocationBroadcaster } from "@/components/shop/LiveLocationBroadcaster";
+import { addressToQuery } from "@/utils/address";
 
 const STATUS_FLOW = ["confirmed", "processing", "shipped", "out_for_delivery", "delivered"] as const;
 const STATUS_LABEL: Record<string, string> = {
@@ -16,13 +17,6 @@ const STATUS_LABEL: Record<string, string> = {
   out_for_delivery: "Out for delivery",
   delivered: "Delivered",
 };
-
-function addressToQuery(addr: any) {
-  if (!addr) return "";
-  return [addr.line1, addr.line2, addr.city, addr.state, addr.postal_code, addr.country]
-    .filter(Boolean)
-    .join(", ");
-}
 
 export function DeliveryTrackingView({ order }: { order: any }) {
   const router = useRouter();
